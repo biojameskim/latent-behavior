@@ -5,6 +5,7 @@
     - Appendix B.2. Fly Datasheet
 - [Dataset Download](https://data.caltech.edu/records/8kdn3-95j37)
 - [Explanation of Data](https://www.aicrowd.com/challenges/multi-agent-behavior-challenge-2022/problems/mabe-2022-fruit-fly-groups)
+- [Dataset from Kai](https://docs.google.com/document/d/116wZ-RpL5NwFL2FWWN9R9kpMdFe9ZeBShsgJsnsAYR0/)
 
 ### Data schema:
 ```
