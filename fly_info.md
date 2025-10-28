@@ -38,8 +38,9 @@
 ## `fly_groups_test_labels.npy`
 - test_labels array: shape=(101, 2443500), dtype=float32
 - This is my understanding:
-    - 101??
+    - 101 
         - There are 50 tasks for the fly dataset..
+        - There are some hidden tests so it could be 50 known tasks.
     - 2443500 = 4500 (frames) x 543 (test sequences).
 
 ## Additional Info
