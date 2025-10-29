@@ -47,7 +47,7 @@
 `"keypoints" shape = (4500, 11, 24, 2)`
 - 4500: # frames
 - 11: # flies (animal ID) - is anywhere from 9-11 and data are padded with nans to be all the same size
-- 24: body part (24 keypoints)
+- 24: body part (24 keypoints - description [here](https://www.aicrowd.com/challenges/multi-agent-behavior-challenge-2022/problems/mabe-2022-fruit-fly-groups#:~:text=Body%20parts%20are,leg%20tip.))
 - 2: x, y coordinate
 
 `"annotations" shape = (3, 4500)`
