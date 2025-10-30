@@ -12,10 +12,18 @@ headless Matplotlib backend so they can run on servers without displays.
 - `create_video.py` – Command-line tool for generating per-frame PNGs and optionally
   assembling them into MP4 (via `ffmpeg`) or GIF (via Pillow). Useful flags include
   `--sequence`, frame range arguments, `--step` for subsampling, `--format` (`frames`,
-  `video`, or `gif`), and `--fps`. Example:
+  `video`, or `gif`), and `--fps`. See documentation in [create_video.py](create_video.py) for more control in the arguments.
+
+  Example:
   ```
   python create_video.py --sequence 01FJRKCP4GE1W1DFX51C --start 0 --end 1000 --step 2 --format video
   ```
+ - Sequence is the sequence_id
+ - start and end specify the start and end frames
+ - step is stride
+ - format can be video, gif, or frames
+ - can also specify desired fps and dpi with `--fps` and `--dpi`
+  
 - `example_plotting.py` – End-to-end showcase of the plotting API. Generates sample
   frame renders, trajectory overlays, pose snapshots, and diagnostic counts of valid
   keypoints. Outputs land in `test_plots/` and `animation_frames/`.
