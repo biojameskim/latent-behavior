@@ -1,1 +1,6 @@
 flies/AnimalPoseForecasting
+
+flies/__pycache__/
+flies/visualization/__pycache__/
+flies/visualization/animations/
+flies/visualization/animation_frames/
