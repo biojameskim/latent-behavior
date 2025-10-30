@@ -1,4 +1,4 @@
-# Visualization Utilities
+# Visualization Docs
 
 Utilities for rendering MABe22 fly pose sequences live here. All scripts assume the
 processed dataset lives at `../../../../data/fly_data/fly_group_train.npy` and use a
