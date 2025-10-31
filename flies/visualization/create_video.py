@@ -29,6 +29,11 @@ import sys
 from pathlib import Path
 from plot_mabe_flies import plot_frame
 
+# Define paths relative to script location
+SCRIPT_DIR = Path(__file__).resolve().parent
+DATA_DIR = SCRIPT_DIR.parent.parent.parent.parent / "data" / "fly_data"
+DEFAULT_DATA_FILE = DATA_DIR / "fly_group_train.npy"
+
 def create_frames(data, sequence_id, start_frame, end_frame, step, output_dir, dpi=100):
     """Create individual frame images."""
     # Create subdirectory for this sequence
@@ -164,7 +169,7 @@ def create_gif(output_dir, sequence_id, start_frame, end_frame, step, fps):
 
 def main():
     parser = argparse.ArgumentParser(description='Create video/GIF from fly sequences')
-    parser.add_argument('--data', default='../../../../data/fly_data/fly_group_train.npy', help='Path to data file')
+    parser.add_argument('--data', default=str(DEFAULT_DATA_FILE), help='Path to data file')
     parser.add_argument('--sequence', default=None, help='Sequence ID (default: first)')
     parser.add_argument('--start', type=int, default=0, help='Start frame')
     parser.add_argument('--end', type=int, default=500, help='End frame')
@@ -174,9 +179,9 @@ def main():
     parser.add_argument('--format', choices=['frames', 'video', 'gif'], default='frames',
                        help='Output format')
     parser.add_argument('--dpi', type=int, default=100, help='Resolution')
-    
+
     args = parser.parse_args()
-    
+
     # Load data
     print(f"Loading data: {args.data}")
     data = np.load(args.data, allow_pickle=True).item()

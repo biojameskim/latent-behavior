@@ -6,10 +6,16 @@ matplotlib.use('Agg')  # Use non-interactive backend
 
 import numpy as np
 import matplotlib.pyplot as plt
+from pathlib import Path
 from plot_mabe_flies import plot_frame, plot_trajectory, KEYPOINT_NAMES
 
+# Define paths relative to script location
+SCRIPT_DIR = Path(__file__).resolve().parent
+DATA_DIR = SCRIPT_DIR.parent.parent.parent.parent / "data" / "fly_data"
+DATA_FILE = DATA_DIR / "fly_group_train.npy"
+
 print("Loading data...")
-data = np.load('../../../../data/fly_data/fly_group_train.npy', allow_pickle=True).item()
+data = np.load(DATA_FILE, allow_pickle=True).item()
 seq_id = list(data['sequences'].keys())[0]
 
 print(f"Plotting sequence: {seq_id}, frame: 0")
