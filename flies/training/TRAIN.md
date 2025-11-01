@@ -20,7 +20,7 @@ python train.py \
 
 # Training with custom hyperparameters
 python train.py \
-    --train_data ../../../data/fly_data/fly_group_train.npy \
+    --train_data ../../../../data/fly_data/fly_group_train.npy \
     --window_size 150 \
     --stride 75 \
     --hidden_dims 64 128 256 \

@@ -6,14 +6,11 @@ Usage:
 """
 
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
 import argparse
 import logging
 from pathlib import Path
 import sys
-import os
 import math
 
 # Add parent directory to path to import modules
@@ -224,7 +221,15 @@ def main(args):
     LOG.info(f"Model has {n_params:,} trainable parameters")
 
     # Create optimizer
-    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.AdamW(
+        model.parameters(), 
+        lr=args.lr,
+        weight_decay=args.weight_decay,
+        betas=(args.beta1, args.beta2)
+    )
+    # Learning rate scheduler
+    t_max = args.lr_scheduler_tmax or args.epochs
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=t_max)
 
     # Training loop
     LOG.info("Starting training...")
@@ -244,6 +249,7 @@ def main(args):
             epoch,
             use_rotation_aug=args.augment_rotation
         )
+        scheduler.step()
         LOG.info(
             f"Train | Loss: {train_metrics['loss']:.4f} | "
             f"Recon: {train_metrics['recon_loss']:.4f} | "
@@ -330,8 +336,16 @@ if __name__ == '__main__':
                         help='Batch size')
     parser.add_argument('--epochs', type=int, default=100,
                         help='Number of epochs')
-    parser.add_argument('--lr', type=float, default=1e-3,
+    parser.add_argument('--lr', type=float, default=1e-4,
                         help='Learning rate')
+    parser.add_argument('--weight_decay', type=float, default=0.0,
+                        help='Weight decay for optimizer (AdamW)')
+    parser.add_argument('--beta1', type=float, default=0.9,
+                        help='Beta1 for AdamW optimizer')
+    parser.add_argument('--beta2', type=float, default=0.99,
+                        help='Beta2 for AdamW optimizer')
+    parser.add_argument('--lr_scheduler_tmax', type=int, default=None,
+                        help='T_max for CosineAnnealingLR scheduler (defaults to epochs)')
     parser.add_argument('--num_workers', type=int, default=4,
                         help='Number of dataloader workers')
     parser.add_argument('--augment_rotation', action='store_true',
