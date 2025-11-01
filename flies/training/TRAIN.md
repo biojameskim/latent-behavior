@@ -15,7 +15,8 @@ cd /share/j_sun/jjk297/repos/latent-behavior/flies/training
 # Basic training with default parameters
 python train.py \
     --train_data ../../../data/fly_data/fly_group_train.npy \
-    --val_data ../../../data/fly_data/fly_group_val.npy
+    --val_data ../../../data/fly_data/fly_group_val.npy \
+    --augment_rotation
 
 # Training with custom hyperparameters
 python train.py \
@@ -29,7 +30,8 @@ python train.py \
     --batch_size 32 \
     --epochs 100 \
     --lr 1e-3 \
-    --output_dir ./outputs
+    --output_dir ./outputs \
+    --augment_rotation
 ```
 
 ## Command-Line Arguments
