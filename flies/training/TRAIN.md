@@ -21,15 +21,17 @@ python train.py \
 # Training with custom hyperparameters
 python train.py \
     --train_data ../../../data/fly_data/fly_group_train.npy \
-    --val_data ../../../data/fly_data/fly_group_val.npy \
     --window_size 150 \
-    --stride 150 \
+    --stride 75 \
     --hidden_dims 64 128 256 \
-    --num_embeddings 512 \
-    --embedding_dim 512 \
-    --batch_size 32 \
+    --num_embeddings 128 \
+    --embedding_dim 256 \
+    --batch_size 128 \
     --epochs 100 \
-    --lr 1e-3 \
+    --lr 1e-4 \
+    --weight_decay 0.0 \
+    --beta1 0.9 \
+    --beta2 0.99 \ 
     --output_dir ./outputs \
     --augment_rotation
 ```
