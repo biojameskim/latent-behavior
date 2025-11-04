@@ -7,13 +7,23 @@ Extracts from prepare_data.py the core preprocessing logic:
 - Removes flies with NaN values
 """
 
-import numpy as np
 import logging
+from typing import Optional, Set, Tuple
+
+import numpy as np
 
 LOG = logging.getLogger(__name__)
 
+FlyID = Tuple[str, int]
 
-def load_and_preprocess_for_vqvae(data_file):
+
+def _is_allowed_fly(sequence_id: str, fly_idx: int, allowed_fly_ids: Optional[Set[FlyID]]) -> bool:
+    if allowed_fly_ids is None:
+        return True
+    return (sequence_id, fly_idx) in allowed_fly_ids
+
+
+def load_and_preprocess_for_vqvae(data_file, allowed_fly_ids: Optional[Set[FlyID]] = None):
     """
     Load and preprocess fly tracking data for VQ-VAE training.
 
@@ -59,6 +69,8 @@ def load_and_preprocess_for_vqvae(data_file):
             has_any_nan = np.any(np.isnan(fly_keypoints))
 
             if not has_any_nan:
+                if not _is_allowed_fly(seq_id, fly_idx, allowed_fly_ids):
+                    continue
                 # Perfect tracking - keep entire trajectory
                 all_fly_trajectories.append({
                     'keypoints': fly_keypoints,  # (4500, 24, 2) - guaranteed no NaNs

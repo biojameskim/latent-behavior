@@ -1,0 +1,175 @@
+
+Loaded checkpoint: training/outputs/run_11_01_25_v1/checkpoint_epoch_250.pt
+
+Top-level keys: ['epoch', 'model_state_dict', 'optimizer_state_dict', 'train_metrics', 'args']
+Epoch: 250
+Train metrics:
+{'loss': 208.40244174825733,
+ 'perplexity': 13.635209768496711,
+ 'recon_loss': 32.49672731551631,
+ 'vq_loss': 175.90571446254336}
+
+Saved args:
+{'augment_rotation': True,
+ 'batch_size': 128,
+ 'beta1': 0.9,
+ 'beta2': 0.99,
+ 'commitment_cost': 0.25,
+ 'embedding_dim': 256,
+ 'epochs': 250,
+ 'hidden_dims': [64, 128, 256],
+ 'input_dim': 48,
+ 'lr': 0.0001,
+ 'lr_scheduler_tmax': None,
+ 'num_embeddings': 128,
+ 'num_residual_blocks': 2,
+ 'num_workers': 4,
+ 'output_dir': './outputs',
+ 'save_every': 10,
+ 'stride': 75,
+ 'train_data': '../../../../data/fly_data/fly_group_train.npy',
+ 'val_data': None,
+ 'weight_decay': 0.0,
+ 'window_size': 150}
+
+Model state dict loaded with 210 tensors (2,984,141 params)
+
+Loaded checkpoint: training/outputs/run_11_01_25_v2/checkpoint_epoch_250.pt
+
+Top-level keys: ['epoch', 'model_state_dict', 'optimizer_state_dict', 'train_metrics', 'args']
+Epoch: 250
+Train metrics:
+{'loss': 374.97774454642985,
+ 'perplexity': 12.228316541375785,
+ 'recon_loss': 52.721369628248546,
+ 'vq_loss': 322.25637505794396}
+
+Saved args:
+{'augment_rotation': True,
+ 'batch_size': 128,
+ 'beta1': 0.9,
+ 'beta2': 0.99,
+ 'commitment_cost': 0.25,
+ 'embedding_dim': 64,
+ 'epochs': 250,
+ 'hidden_dims': [64, 128, 256],
+ 'input_dim': 48,
+ 'lr': 0.0001,
+ 'lr_scheduler_tmax': None,
+ 'num_embeddings': 32,
+ 'num_residual_blocks': 2,
+ 'num_workers': 4,
+ 'output_dir': './outputs/run_11_01_25_v2',
+ 'save_every': 10,
+ 'stride': 75,
+ 'train_data': '../../../../data/fly_data/fly_group_train.npy',
+ 'val_data': None,
+ 'weight_decay': 0.0,
+ 'window_size': 150}
+
+Model state dict loaded with 210 tensors (2,658,317 params)
+
+Loaded checkpoint: training/outputs/run_11_01_25_v3/checkpoint_epoch_250.pt
+
+Top-level keys: ['epoch', 'model_state_dict', 'optimizer_state_dict', 'train_metrics', 'args']
+Epoch: 250
+Train metrics:
+{'loss': 166.9642747846143,
+ 'perplexity': 11.436852883676004,
+ 'recon_loss': 47.35090923514859,
+ 'vq_loss': 119.61336548163973}
+
+Saved args:
+{'augment_rotation': True,
+ 'batch_size': 128,
+ 'beta1': 0.9,
+ 'beta2': 0.99,
+ 'commitment_cost': 0.25,
+ 'embedding_dim': 32,
+ 'epochs': 250,
+ 'hidden_dims': [64, 128, 256],
+ 'input_dim': 48,
+ 'lr': 0.0001,
+ 'lr_scheduler_tmax': None,
+ 'num_embeddings': 16,
+ 'num_residual_blocks': 2,
+ 'num_workers': 4,
+ 'output_dir': './outputs/run_11_01_25_v3',
+ 'save_every': 10,
+ 'stride': 75,
+ 'train_data': '../../../../data/fly_data/fly_group_train.npy',
+ 'val_data': None,
+ 'weight_decay': 0.0,
+ 'window_size': 150}
+
+Model state dict loaded with 210 tensors (2,607,597 params)
+
+Loaded checkpoint: training/outputs/run_11_01_25_v4/checkpoint_epoch_250.pt
+
+Top-level keys: ['epoch', 'model_state_dict', 'optimizer_state_dict', 'train_metrics', 'args']
+Epoch: 250
+Train metrics:
+{'loss': 238.70211203344937,
+ 'perplexity': 10.920056345133945,
+ 'recon_loss': 40.54486018727566,
+ 'vq_loss': 198.15725206506664}
+
+Saved args:
+{'augment_rotation': True,
+ 'batch_size': 128,
+ 'beta1': 0.9,
+ 'beta2': 0.99,
+ 'commitment_cost': 0.25,
+ 'embedding_dim': 64,
+ 'epochs': 250,
+ 'hidden_dims': [64, 128, 256],
+ 'input_dim': 48,
+ 'lr': 0.0001,
+ 'lr_scheduler_tmax': None,
+ 'num_embeddings': 16,
+ 'num_residual_blocks': 2,
+ 'num_workers': 4,
+ 'output_dir': './outputs/run_11_01_25_v4',
+ 'save_every': 10,
+ 'stride': 75,
+ 'train_data': '../../../../data/fly_data/fly_group_train.npy',
+ 'val_data': None,
+ 'weight_decay': 0.0,
+ 'window_size': 150}
+
+Model state dict loaded with 210 tensors (2,657,293 params)
+
+Loaded checkpoint: training/outputs/run_11_01_25_v5/checkpoint_epoch_250.pt
+
+Top-level keys: ['epoch', 'model_state_dict', 'optimizer_state_dict', 'train_metrics', 'args']
+Epoch: 250
+Train metrics:
+{'loss': 504.6884852442248,
+ 'perplexity': 10.199896364376462,
+ 'recon_loss': 45.680242229124595,
+ 'vq_loss': 459.0082431003965}
+
+Saved args:
+{'augment_rotation': True,
+ 'batch_size': 128,
+ 'beta1': 0.9,
+ 'beta2': 0.99,
+ 'commitment_cost': 0.25,
+ 'embedding_dim': 32,
+ 'epochs': 250,
+ 'hidden_dims': [64, 128, 256],
+ 'input_dim': 48,
+ 'lr': 0.0001,
+ 'lr_scheduler_tmax': None,
+ 'num_embeddings': 32,
+ 'num_residual_blocks': 2,
+ 'num_workers': 4,
+ 'output_dir': './outputs/run_11_01_25_v5',
+ 'save_every': 10,
+ 'stride': 75,
+ 'train_data': '../../../../data/fly_data/fly_group_train.npy',
+ 'val_data': None,
+ 'weight_decay': 0.0,
+ 'window_size': 150}
+
+Model state dict loaded with 210 tensors (2,608,109 params)

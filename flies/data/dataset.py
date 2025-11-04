@@ -14,7 +14,7 @@ class FlyKeypointDataset(Dataset):
     Dataset that creates sliding windows from fly trajectories for VQ-VAE training.
     """
     
-    def __init__(self, all_fly_trajectories, window_size=150, stride=75):
+    def __init__(self, all_fly_trajectories, window_size=150, stride=75, include_metadata=False):
         """
         Args:
             all_fly_trajectories: list of dicts from preprocessing.load_and_preprocess_for_vqvae
@@ -23,6 +23,7 @@ class FlyKeypointDataset(Dataset):
         """
         self.window_size = window_size
         self.stride = stride
+        self.include_metadata = include_metadata
         self.windows = []
         self.metadata = []
         
@@ -74,7 +75,10 @@ class FlyKeypointDataset(Dataset):
     
     def __getitem__(self, idx):
         """Returns a single window of shape (48, window_size) = (features, time)"""
-        return self.windows[idx]
+        window = self.windows[idx]
+        if self.include_metadata:
+            return window, self.metadata[idx]
+        return window
     
     def get_metadata(self, idx):
         """Get metadata for a specific window."""
@@ -83,7 +87,9 @@ class FlyKeypointDataset(Dataset):
 
 def create_dataloaders(train_data_file, val_data_file=None, 
                        window_size=150, stride=75, 
-                       batch_size=32, num_workers=4):
+                       batch_size=32, num_workers=4,
+                       train_fly_ids=None, val_fly_ids=None,
+                       train_include_metadata=False, val_include_metadata=False):
     """
     Convenience function to create train/val dataloaders.
     
@@ -102,8 +108,19 @@ def create_dataloaders(train_data_file, val_data_file=None,
     from .preprocessing import load_and_preprocess_for_vqvae
     
     # Load training data
-    train_trajectories = load_and_preprocess_for_vqvae(train_data_file)
-    train_dataset = FlyKeypointDataset(train_trajectories, window_size, stride)
+    if train_fly_ids is not None:
+        train_fly_ids = set(train_fly_ids)
+        LOG.info("Building training set with %d specified flies", len(train_fly_ids))
+    train_trajectories = load_and_preprocess_for_vqvae(
+        train_data_file,
+        allowed_fly_ids=train_fly_ids,
+    )
+    train_dataset = FlyKeypointDataset(
+        train_trajectories,
+        window_size,
+        stride,
+        include_metadata=train_include_metadata,
+    )
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
@@ -112,9 +129,24 @@ def create_dataloaders(train_data_file, val_data_file=None,
         pin_memory=True
     )
     
+    if val_fly_ids is not None and val_data_file is None:
+        LOG.info("No validation data file provided; reusing training data file for validation split")
+        val_data_file = train_data_file
+    
     if val_data_file is not None:
-        val_trajectories = load_and_preprocess_for_vqvae(val_data_file)
-        val_dataset = FlyKeypointDataset(val_trajectories, window_size, stride)
+        if val_fly_ids is not None:
+            val_fly_ids = set(val_fly_ids)
+            LOG.info("Building validation set with %d specified flies", len(val_fly_ids))
+        val_trajectories = load_and_preprocess_for_vqvae(
+            val_data_file,
+            allowed_fly_ids=val_fly_ids,
+        )
+        val_dataset = FlyKeypointDataset(
+            val_trajectories,
+            window_size,
+            stride,
+            include_metadata=val_include_metadata,
+        )
         val_loader = DataLoader(
             val_dataset,
             batch_size=batch_size,

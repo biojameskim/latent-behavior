@@ -22,9 +22,9 @@ PyTorch DataLoaders ready for training
 
 Contains data loading and preprocessing logic.
 
-#### `load_and_preprocess_for_vqvae(data_file)`
+#### `load_and_preprocess_for_vqvae(data_file, allowed_fly_ids=None)`
 
-Loads raw fly tracking data and prepares it for VQ-VAE training.
+Loads raw fly tracking data and prepares it for VQ-VAE training. If you pass a set of `(sequence_id, fly_idx)` tuples via `allowed_fly_ids`, the function keeps only those trajectories while maintaining the NaN filtering.
 
 **Input format**: `.npy` file containing:
 ```python
@@ -63,6 +63,10 @@ trajectories = load_and_preprocess_for_vqvae('path/to/fly_group_train.npy')
 print(f"Loaded {len(trajectories)} fly trajectories")
 print(f"Each trajectory shape: {trajectories[0]['keypoints'].shape}")
 # Output: (4500, 24, 2) for full-length sequences
+
+# Keep only selected flies
+allowed = {('ABC123', 0), ('XYZ789', 4)}
+subset = load_and_preprocess_for_vqvae('path/to/fly_group_train.npy', allowed_fly_ids=allowed)
 ```
 
 **Statistics** (example from training set):
@@ -82,6 +86,7 @@ Creates sliding windows from fly trajectories for batch training.
 - `all_fly_trajectories`: List of dicts from `load_and_preprocess_for_vqvae()`
 - `window_size`: Number of frames per window (default: 150)
 - `stride`: Stride for sliding windows (default: 75)
+- `include_metadata`: Whether to return `(window, metadata_dict)` (default: `False`)
 
 **Windowing behavior**:
 - Creates overlapping or non-overlapping windows based on stride
@@ -95,7 +100,7 @@ Creates sliding windows from fly trajectories for batch training.
 
 **Methods**:
 - `__len__()`: Returns total number of windows
-- `__getitem__(idx)`: Returns window tensor of shape `(48, window_size)`
+- `__getitem__(idx)`: Returns window tensor (or `(window, metadata)` if `include_metadata=True`)
 - `get_metadata(idx)`: Returns dict with `sequence_id`, `fly_idx`, `window_idx`
 
 **Example usage**:
@@ -110,16 +115,14 @@ trajectories = load_and_preprocess_for_vqvae('train.npy')
 dataset = FlyKeypointDataset(
     trajectories,
     window_size=150,
-    stride=150  # Non-overlapping
+    stride=150,           # Non-overlapping
+    include_metadata=True
 )
 
 print(f"Total windows: {len(dataset)}")
-print(f"Window shape: {dataset[0].shape}")  # (48, 150)
-
-# Get metadata for a window
-metadata = dataset.get_metadata(0)
-print(metadata)
-# {'sequence_id': 'ABC123', 'fly_idx': 3, 'window_idx': 0}
+window, metadata = dataset[0]
+print(window.shape)       # (48, 150)
+print(metadata)           # {'sequence_id': 'ABC123', 'fly_idx': 3, 'window_idx': 0}
 ```
 
 #### `create_dataloaders()`
@@ -128,11 +131,13 @@ Convenience function to create train/val DataLoaders in one call.
 
 **Arguments**:
 - `train_data_file`: Path to training .npy file
-- `val_data_file`: Path to validation .npy file (optional)
+- `val_data_file`: Path to validation .npy file (optional; if omitted you can still create a validation loader by passing `val_fly_ids`) 
 - `window_size`: Window size for Dataset (default: 150)
 - `stride`: Stride for Dataset (default: 75)
 - `batch_size`: Batch size for DataLoader (default: 32)
 - `num_workers`: Number of DataLoader workers (default: 4)
+- `train_fly_ids`, `val_fly_ids`: Optional iterables of `(sequence_id, fly_idx)` pairs to filter each split.
+- `train_include_metadata`, `val_include_metadata`: Forwarded to `FlyKeypointDataset` to return metadata alongside windows.
 
 **Returns**:
 - If `val_data_file` provided: `(train_loader, val_loader)`
@@ -142,21 +147,40 @@ Convenience function to create train/val DataLoaders in one call.
 ```python
 from data.dataset import create_dataloaders
 
-# Create both train and val loaders
+# Create loaders using fly-level filters stored in JSON
+import json
+
+split_json = json.load(open('data/fly_data/fly_splits.json'))
+train_ids = {(item['sequence_id'], item['fly_idx']) for item in split_json['train']}
+val_ids = {(item['sequence_id'], item['fly_idx']) for item in split_json['val']}
+
 train_loader, val_loader = create_dataloaders(
     train_data_file='data/fly_group_train.npy',
-    val_data_file='data/fly_group_val.npy',
+    val_data_file=None,  # reuse the same file; val_fly_ids selects the held-out flies
     window_size=150,
     stride=150,
     batch_size=32,
-    num_workers=4
+    num_workers=4,
+    train_fly_ids=train_ids,
+    val_fly_ids=val_ids,
+    train_include_metadata=True,
+    val_include_metadata=True,
 )
 
-# Iterate through data
-for batch in train_loader:
-    print(batch.shape)  # (32, 48, 150) = (batch, features, time)
-    break
+windows, metadata = next(iter(train_loader))
+print(windows.shape)               # (32, 48, 150)
+print(metadata['sequence_id'][0])  # e.g., 'ABC123'
 ```
+
+### 3. `prepare_data.py`
+
+Helper utilities that wrap preprocessing/dataset functionality.
+
+- `generate_fly_splits(data_file, val_fraction=0.1, seed=0, save_path=None)`:
+  - Builds reproducible `{train, val}` fly lists by shuffling `(sequence_id, fly_idx)` pairs.
+  - Ensures entire flies stay in a single split (no leakage across windows).
+  - Optionally saves a JSON file compatible with `train.py --fly_split_file`.
+- `create_windows` / `prepare_dataset`: Lower-level window generators mainly used for diagnostics or exporting windowed datasets.
 
 ## Data Shape Transformations
 

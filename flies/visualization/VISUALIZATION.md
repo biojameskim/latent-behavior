@@ -18,15 +18,19 @@ headless Matplotlib backend so they can run on servers without displays.
   ```
   python create_video.py --sequence 01FJRKCP4GE1W1DFX51C --start 0 --end 1000 --step 2 --format video
   ```
- - Sequence is the sequence_id
- - start and end specify the start and end frames
- - step is stride
- - format can be video, gif, or frames
- - can also specify desired fps and dpi with `--fps` and `--dpi`
+- Sequence is the sequence_id
+- start and end specify the start and end frames
+- step is stride
+- format can be video, gif, or frames
+- can also specify desired fps and dpi with `--fps` and `--dpi`
   
 - `example_plotting.py` – End-to-end showcase of the plotting API. Generates sample
   frame renders, trajectory overlays, pose snapshots, and diagnostic counts of valid
   keypoints. Outputs land in `test_plots/` and `animation_frames/`.
+- `reconstruction.py` – Utilities for turning VQ-VAE reconstructions back into stitched fly trajectories and arena overlays. Given original windows, reconstructed windows, and the metadata emitted by `FlyKeypointDataset(include_metadata=True)`, it provides:
+  - `group_windows_by_fly`, `stitch_fly_windows`, `assemble_sequences` to rebuild `(4500, 24, 2)` fly tracks and `(4500, 11, 24, 2)` arena tensors.
+  - `plot_window_overlay` for side-by-side window diagnostics.
+  - `plot_sequence_overlay` for arena-wide comparisons at a chosen frame.
 
 ## Output Directories
 - `animation_frames/` – Cache of PNG frames produced by `example_plotting.py` and

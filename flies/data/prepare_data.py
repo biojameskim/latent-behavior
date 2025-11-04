@@ -10,11 +10,19 @@ All kept trajectories have exactly 4500 frames with no NaNs
 """
 
 
-import numpy as np
+import json
 import logging
+from pathlib import Path
+from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
+
+import numpy as np
 
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
+
+
+FlyID = Tuple[str, int]
+
 
 def create_windows(keypoints, window_size, stride):
     """
@@ -56,7 +64,16 @@ def prepare_dataset(all_fly_trajectories, window_size=150, stride=75):
 
     return all_windows
 
-def load_and_preprocess_for_vqvae(data_file):
+def _is_allowed_fly(sequence_id: str, fly_idx: int, allowed_fly_ids: Optional[Set[FlyID]]) -> bool:
+    if allowed_fly_ids is None:
+        return True
+    return (sequence_id, fly_idx) in allowed_fly_ids
+
+
+def load_and_preprocess_for_vqvae(
+    data_file: str,
+    allowed_fly_ids: Optional[Set[FlyID]] = None,
+):
     """
     Load and preprocess fly tracking data for VQ-VAE training.
     - Removes frames with NaNs
@@ -94,6 +111,8 @@ def load_and_preprocess_for_vqvae(data_file):
             has_any_nan = np.any(np.isnan(fly_keypoints))
             
             if not has_any_nan:
+                if not _is_allowed_fly(seq_id, fly_idx, allowed_fly_ids):
+                    continue
                 # Perfect tracking - keep entire trajectory
                 all_fly_trajectories.append({
                     'keypoints': fly_keypoints,  # (4500, 24, 2) - guaranteed no NaNs
@@ -124,6 +143,57 @@ def load_and_preprocess_for_vqvae(data_file):
     # Note: all_fly_trajectories is a list of dicts, each with keys: 'keypoints', 'sequence_id', 'fly_idx', 'original_frame_indices'
     # each keypoints is an array of shape (4500, 24, 2) --> (n_valid_frames, num_keypoints, num_coordinates)
     return all_fly_trajectories
+
+
+def generate_fly_splits(
+    data_file: str,
+    val_fraction: float = 0.1,
+    seed: int = 0,
+    save_path: Optional[str] = None,
+) -> Dict[str, List[Dict[str, int]]]:
+    """
+    Create a reproducible fly-level split and optionally persist to disk.
+
+    Returns a dict with keys 'train' and 'val', each containing list of
+    {'sequence_id': str, 'fly_idx': int} mappings.
+    """
+    trajectories = load_and_preprocess_for_vqvae(data_file)
+    fly_ids: List[FlyID] = [(traj['sequence_id'], traj['fly_idx']) for traj in trajectories]
+
+    rng = np.random.default_rng(seed)
+    rng.shuffle(fly_ids)
+
+    n_total = len(fly_ids)
+    n_val = int(round(n_total * val_fraction))
+    n_val = min(n_val, n_total)
+    n_train = max(0, n_total - n_val)
+
+    train_ids = fly_ids[:n_train]
+    val_ids = fly_ids[n_train:n_train + n_val]
+
+    def _convert(items: Sequence[FlyID]) -> List[Dict[str, object]]:
+        return [{'sequence_id': seq_id, 'fly_idx': int(fly_idx)} for seq_id, fly_idx in items]
+
+    splits = {
+        'train': _convert(train_ids),
+        'val': _convert(val_ids),
+    }
+
+    LOG.info(
+        "Created fly splits with %d total flies: train=%d, val=%d",
+        n_total,
+        len(train_ids),
+        len(val_ids),
+    )
+
+    if save_path is not None:
+        output_path = Path(save_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with output_path.open('w', encoding='utf-8') as f:
+            json.dump(splits, f, indent=2)
+        LOG.info("Saved fly splits to %s", output_path)
+
+    return splits
     
 if __name__ == "__main__":
 

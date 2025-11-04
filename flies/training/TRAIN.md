@@ -31,7 +31,7 @@ python train.py \
     --lr 1e-4 \
     --weight_decay 0.0 \
     --beta1 0.9 \
-    --beta2 0.99 \ 
+    --beta2 0.99 \
     --output_dir ./outputs \
     --augment_rotation
 ```
@@ -43,9 +43,14 @@ python train.py \
 | Argument | Type | Default | Description |
 |----------|------|---------|-------------|
 | `--train_data` | str | **required** | Path to training .npy file |
-| `--val_data` | str | `None` | Path to validation .npy file (optional) |
+| `--val_data` | str | `None` | Path to validation .npy file (optional). If omitted you can still create a validation loader by providing fly-level filters. |
 | `--window_size` | int | `150` | Number of frames per window |
 | `--stride` | int | `150` | Stride for sliding windows (use `window_size` for non-overlapping) |
+| `--fly_split_file` | str | `None` | JSON file containing fly-level splits (e.g., output of `generate_fly_splits`). |
+| `--train_split_name` | str | `train` | Key inside the split JSON for the training set. |
+| `--val_split_name` | str | `val` | Key inside the split JSON for the validation set. |
+| `--train_fly_filter` | str | `None` | Path to JSON list of fly records overriding the training split. |
+| `--val_fly_filter` | str | `None` | Path to JSON list overriding the validation split. |
 
 **Note on stride**:
 - `stride = window_size` → non-overlapping windows (recommended for clean train/val split)
@@ -116,10 +121,10 @@ python train.py \
    - **Total Loss**: `recon_loss + vq_loss`
 
 4. **Metrics Tracked**:
-   - **Loss**: Total training/validation loss
-   - **Recon Loss**: Reconstruction quality
-   - **VQ Loss**: Quantization quality
-   - **Perplexity**: Codebook usage (higher = more codes actively used)
+   - **Loss**: Total training/validation loss averaged over every batch in the epoch.
+   - **Recon Loss**: Mean-squared error between the input window and its reconstruction.
+   - **VQ Loss**: Sum of codebook and commitment losses returned by the vector quantizer.
+   - **Perplexity**: Codebook usage computed from the empirical distribution of chosen code indices (higher = more codes actively used).
 
 ### Model Checkpoints
 
@@ -270,6 +275,17 @@ The training script logs progress every 100 batches:
 - Increase batch size: `--batch_size 64`
 - Use more workers: `--num_workers 8`
 - Reduce dataset size (fewer windows per fly)
+
+## Fly-Level Splits & Reconstructions
+
+- Generate reproducible train/validation fly lists with `generate_fly_splits` in `flies/data/prepare_data.py`:
+  ```bash
+  python -c "from flies.data.prepare_data import generate_fly_splits; generate_fly_splits('data/fly_data/fly_group_train.npy', val_fraction=0.1, seed=42, save_path='data/fly_data/fly_splits.json')"
+  ```
+- Point `train.py` at the saved JSON via `--fly_split_file data/fly_data/fly_splits.json`. The script keeps whole `(sequence_id, fly_idx)` pairs in a single split and will reuse `--train_data` for validation if you only supply filters.
+- Override or fine-tune splits with `--train_fly_filter` / `--val_fly_filter`, each expecting a JSON array of `{"sequence_id": "...", "fly_idx": N}`.
+- When you need to trace reconstructions back to their source, request metadata from the dataloaders by calling `create_dataloaders(..., train_include_metadata=True, val_include_metadata=True)`. Each sample then returns `(window, metadata_dict)`.
+- After training, load your checkpoint, run the evaluation dataset through the model to produce reconstructions, and use the utilities in `flies/visualization/reconstruction.py` to stitch windows back into full fly trajectories or arena-wide overlays for qualitative inspection.
 
 ## Next Steps After Training
 

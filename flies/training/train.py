@@ -2,16 +2,19 @@
 Training script for VQ-VAE on fly behavior sequences.
 
 Usage:
-    python train.py --train_data /path/to/train.npy --val_data /path/to/val.npy
+    python train.py --train_data /path/to/data.npy \
+        --fly_split_file /path/to/fly_splits.json --val_data /path/to/data.npy
 """
+
+import argparse
+import json
+import logging
+import math
+import sys
+from pathlib import Path
 
 import torch
 import torch.nn.functional as F
-import argparse
-import logging
-from pathlib import Path
-import sys
-import math
 
 # Add parent directory to path to import modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -24,6 +27,47 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 LOG = logging.getLogger(__name__)
+
+
+def _load_fly_id_list(entries):
+    fly_ids = set()
+    for item in entries:
+        if not isinstance(item, dict):
+            raise ValueError("Fly filter entries must be dictionaries with 'sequence_id' and 'fly_idx'")
+        if 'sequence_id' not in item or 'fly_idx' not in item:
+            raise ValueError("Fly filter entries require 'sequence_id' and 'fly_idx' keys")
+        fly_ids.add((str(item['sequence_id']), int(item['fly_idx'])))
+    return fly_ids
+
+
+def load_fly_filters(
+    fly_split_file=None,
+    train_split_name='train',
+    val_split_name='val',
+    train_filter_path=None,
+    val_filter_path=None,
+):
+    train_ids = None
+    val_ids = None
+
+    if fly_split_file:
+        with open(fly_split_file, 'r', encoding='utf-8') as f:
+            content = json.load(f)
+        if not isinstance(content, dict):
+            raise ValueError("Fly split file must contain a JSON object with split names")
+        if train_split_name in content:
+            train_ids = _load_fly_id_list(content[train_split_name])
+        if val_split_name in content:
+            val_ids = _load_fly_id_list(content[val_split_name])
+
+    if train_filter_path:
+        with open(train_filter_path, 'r', encoding='utf-8') as f:
+            train_ids = _load_fly_id_list(json.load(f))
+    if val_filter_path:
+        with open(val_filter_path, 'r', encoding='utf-8') as f:
+            val_ids = _load_fly_id_list(json.load(f))
+
+    return train_ids, val_ids
 
 
 def random_rotate_batch(windows):
@@ -180,14 +224,24 @@ def main(args):
 
     # Create dataloaders
     LOG.info("Creating dataloaders...")
-    if args.val_data:
+    train_fly_ids, val_fly_ids = load_fly_filters(
+        fly_split_file=args.fly_split_file,
+        train_split_name=args.train_split_name,
+        val_split_name=args.val_split_name,
+        train_filter_path=args.train_fly_filter,
+        val_filter_path=args.val_fly_filter,
+    )
+
+    if args.val_data or val_fly_ids is not None:
         train_loader, val_loader = create_dataloaders(
             train_data_file=args.train_data,
             val_data_file=args.val_data,
             window_size=args.window_size,
             stride=args.stride,
             batch_size=args.batch_size,
-            num_workers=args.num_workers
+            num_workers=args.num_workers,
+            train_fly_ids=train_fly_ids,
+            val_fly_ids=val_fly_ids
         )
     else:
         train_loader = create_dataloaders(
@@ -195,7 +249,8 @@ def main(args):
             window_size=args.window_size,
             stride=args.stride,
             batch_size=args.batch_size,
-            num_workers=args.num_workers
+            num_workers=args.num_workers,
+            train_fly_ids=train_fly_ids
         )
         val_loader = None
 
@@ -356,6 +411,18 @@ if __name__ == '__main__':
                         help='Output directory for checkpoints')
     parser.add_argument('--save_every', type=int, default=10,
                         help='Save checkpoint every N epochs')
+
+    # Fly-level split arguments
+    parser.add_argument('--fly_split_file', type=str, default=None,
+                        help='JSON file containing fly-level splits with keys like train/val/test')
+    parser.add_argument('--train_split_name', type=str, default='train',
+                        help='Key in fly_split_file to use for training flies')
+    parser.add_argument('--val_split_name', type=str, default='val',
+                        help='Key in fly_split_file to use for validation flies')
+    parser.add_argument('--train_fly_filter', type=str, default=None,
+                        help='JSON file containing a list of fly dicts for training override')
+    parser.add_argument('--val_fly_filter', type=str, default=None,
+                        help='JSON file containing a list of fly dicts for validation override')
 
     args = parser.parse_args()
 

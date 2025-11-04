@@ -1,9 +1,10 @@
 flies/AnimalPoseForecasting
 
-flies/__pycache__/
-flies/visualization/__pycache__/
 flies/visualization/animations/
 flies/visualization/animation_frames/
 
-flies/vq_vae/__pycache__/
 flies/training/NOTES.md
+*/*/__pycache__
+*/__pycache__/
+
+flies/training/outputs/
