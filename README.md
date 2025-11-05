@@ -12,3 +12,6 @@ conda activate lat-beh
 ```
 In Progress...
 ```
+
+## Acknowledgments
+- Branson Lab's [FlyLLM](https://github.com/kristinbranson/AnimalPoseForecasting/tree/c5d61ac2ee6109287d104aeb4465858b1eae603f/flyllm)
