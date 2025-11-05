@@ -9,7 +9,6 @@ Usage:
 import argparse
 import json
 import logging
-import math
 import sys
 from pathlib import Path
 
@@ -70,55 +69,7 @@ def load_fly_filters(
     return train_ids, val_ids
 
 
-def random_rotate_batch(windows):
-    """
-    Randomly rotate each trajectory window around the arena center (0, 0).
-
-    This makes the learned behavior codes rotation-invariant, appropriate for
-    circular fly arenas where absolute orientation is arbitrary.
-
-    Args:
-        windows: (batch_size, 48, timesteps) tensor of keypoint coordinates
-
-    Returns:
-        Rotated windows with same shape
-    """
-    batch_size, features, timesteps = windows.shape
-    num_keypoints = features // 2  # 24 keypoints
-
-    # Reshape to (batch, num_keypoints, 2, timesteps) then permute to (B, T, 24, 2)
-    coords = windows.view(batch_size, num_keypoints, 2, timesteps)
-    coords = coords.permute(0, 3, 1, 2).contiguous()  # (B, T, 24, 2)
-
-    # Generate random rotation angle for each sample in batch
-    theta = torch.rand(batch_size, device=windows.device) * (2 * math.pi)  # (B,)
-    cos_theta = torch.cos(theta)  # (B,)
-    sin_theta = torch.sin(theta)  # (B,)
-
-    # Build rotation matrix for each sample: [[cos, -sin], [sin, cos]]
-    # Shape: (B, 2, 2)
-    rotation = torch.stack([
-        torch.stack([cos_theta, -sin_theta], dim=1),  # First row
-        torch.stack([sin_theta, cos_theta], dim=1)    # Second row
-    ], dim=1)
-
-    # Flatten coords for batch matrix multiplication: (B, T*24, 2)
-    coords_flat = coords.view(batch_size, -1, 2)
-
-    # Apply rotation: (B, T*24, 2) @ (B, 2, 2) = (B, T*24, 2)
-    rotated_flat = torch.bmm(coords_flat, rotation)
-
-    # Reshape back to (B, T, 24, 2)
-    rotated = rotated_flat.view(batch_size, timesteps, num_keypoints, 2)
-
-    # Convert back to (B, 48, T) format
-    rotated = rotated.permute(0, 2, 3, 1).contiguous()  # (B, 24, 2, T)
-    rotated = rotated.view(batch_size, features, timesteps)
-
-    return rotated
-
-
-def train_epoch(model, train_loader, optimizer, device, epoch, use_rotation_aug=False):
+def train_epoch(model, train_loader, optimizer, device, epoch):
     """Train for one epoch."""
     model.train()
 
@@ -129,10 +80,6 @@ def train_epoch(model, train_loader, optimizer, device, epoch, use_rotation_aug=
 
     for batch_idx, x in enumerate(train_loader):
         x = x.to(device)  # (batch, 48, time)
-
-        if use_rotation_aug:
-            with torch.no_grad():
-                x = random_rotate_batch(x)
 
         # Forward pass
         x_recon, vq_loss, perplexity, _, _ = model(x)
@@ -301,8 +248,7 @@ def main(args):
             train_loader,
             optimizer,
             device,
-            epoch,
-            use_rotation_aug=args.augment_rotation
+            epoch
         )
         scheduler.step()
         LOG.info(
@@ -403,8 +349,6 @@ if __name__ == '__main__':
                         help='T_max for CosineAnnealingLR scheduler (defaults to epochs)')
     parser.add_argument('--num_workers', type=int, default=4,
                         help='Number of dataloader workers')
-    parser.add_argument('--augment_rotation', action='store_true',
-                        help='Apply random rotational augmentation during training')
 
     # Output arguments
     parser.add_argument('--output_dir', type=str, default='./outputs',
