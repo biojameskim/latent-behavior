@@ -20,18 +20,20 @@ python train.py \
 # Training with custom hyperparameters
 python train.py \
     --train_data ../../../../data/fly_data/fly_group_train.npy \
+    --val_data ../../../../data/fly_data/fly_group_train.npy \
+    --fly_split_file ../data/fly_data/fly_split.json \
     --window_size 150 \
     --stride 75 \
     --hidden_dims 64 128 256 \
-    --num_embeddings 128 \
-    --embedding_dim 256 \
+    --num_embeddings 16 \
+    --embedding_dim 32 \
     --batch_size 128 \
-    --epochs 100 \
+    --epochs 250 \
     --lr 1e-4 \
     --weight_decay 0.0 \
     --beta1 0.9 \
     --beta2 0.99 \
-    --output_dir ./outputs
+    --output_dir ./outputs/run_11_05_25_v1
 ```
 
 ## Command-Line Arguments
@@ -175,17 +177,21 @@ codes = model.encode(x)  # (batch, reduced_time_steps)
 
 ```bash
 python train.py \
-    --train_data path/to/train.npy \
-    --val_data path/to/val.npy \
+    --train_data ../../../../data/fly_data/fly_group_train.npy \
+    --val_data ../../../../data/fly_data/fly_group_train.npy \
+    --fly_split_file ../data/fly_data/fly_split.json \
     --window_size 150 \
-    --stride 150 \
+    --stride 75 \
     --hidden_dims 64 128 256 \
-    --num_embeddings 512 \
-    --embedding_dim 512 \
-    --num_residual_blocks 2 \
-    --batch_size 32 \
-    --epochs 100 \
-    --lr 1e-3
+    --num_embeddings 16 \
+    --embedding_dim 32 \
+    --batch_size 128 \
+    --epochs 250 \
+    --lr 1e-4 \
+    --weight_decay 0.0 \
+    --beta1 0.9 \
+    --beta2 0.99 \
+    --output_dir ./outputs/run_11_05_25_v1
 ```
 
 ### Tuning Strategies
