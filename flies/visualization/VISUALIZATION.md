@@ -59,10 +59,10 @@ headless Matplotlib backend so they can run on servers without displays.
   **Output layout**
   ```
   reconstruction_viz/
-  ├── window_overlays/
+  ├── window_overlays/ # --> basically you'll be able to see 1 fly's window overlay
   │   ├── window_0000.png
   │   └── …
-  ├── sequence_overlays/
+  ├── sequence_overlays/ # --> and here, you'll be able to see all 9-11 flies overlay
   │   ├── <sequence_id>_frame_0.png
   │   └── …
   └── stitched.pt  # only if --save_pt was provided
