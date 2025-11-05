@@ -345,21 +345,28 @@ def __getitem__(self, idx):
     return window
 ```
 
-### Adding Normalization
+### Normalization (Implemented)
 
-Consider normalizing keypoints:
+**All trajectories are automatically normalized to a canonical reference frame** in `preprocessing.py`:
+
 ```python
-# Per-fly normalization (center and scale)
-keypoints = (keypoints - keypoints.mean(axis=0)) / keypoints.std(axis=0)
-
-# Arena normalization (0-1 range)
-keypoints = (keypoints - arena_min) / (arena_max - arena_min)
+def normalize_trajectory(keypoints):
+    """
+    Normalize to canonical frame:
+    - Center: Initial body position (keypoint 19) at (0, 0)
+    - Rotation: Initial orientation facing upward (positive y)
+    """
+    # Uses keypoint 19 (ellipse_center) for translation
+    # Uses keypoint 20 (ellipse_orientation) for rotation
 ```
 
-**Trade-offs**:
-- Helps training stability
-- May remove important spatial information (absolute position in arena)
-- Consider per-fly vs. global normalization carefully
+**Benefits**:
+- Makes behavior codes rotation-invariant
+- More efficient than rotation augmentation
+- Removes arbitrary spatial variance (absolute position/orientation in arena)
+- All flies start in consistent reference frame for learning
+
+**Note**: This is applied during data loading in `load_and_preprocess_for_vqvae()`, so all downstream training/validation/inference automatically uses normalized coordinates
 
 ## Troubleshooting
 

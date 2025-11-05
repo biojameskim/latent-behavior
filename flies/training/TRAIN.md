@@ -15,8 +15,7 @@ cd /share/j_sun/jjk297/repos/latent-behavior/flies/training
 # Basic training with default parameters
 python train.py \
     --train_data ../../../data/fly_data/fly_group_train.npy \
-    --val_data ../../../data/fly_data/fly_group_val.npy \
-    --augment_rotation
+    --val_data ../../../data/fly_data/fly_group_val.npy
 
 # Training with custom hyperparameters
 python train.py \
@@ -32,8 +31,7 @@ python train.py \
     --weight_decay 0.0 \
     --beta1 0.9 \
     --beta2 0.99 \
-    --output_dir ./outputs \
-    --augment_rotation
+    --output_dir ./outputs
 ```
 
 ## Command-Line Arguments
@@ -82,7 +80,6 @@ python train.py \
 | `--epochs` | int | `100` | Number of training epochs |
 | `--lr` | float | `1e-3` | Learning rate for Adam optimizer |
 | `--num_workers` | int | `4` | Number of DataLoader workers |
-| `--augment_rotation` | flag | `False` | Apply random rotation augmentation for rotation-invariant behavior codes |
 
 ### Output Arguments
 
@@ -99,6 +96,7 @@ python train.py \
    - Loads fly trajectories from .npy files
    - Splits into individual fly sequences (removes multi-fly context)
    - Filters out flies with NaN tracking values
+   - Normalizes each trajectory to canonical frame (centered at origin, facing upward)
    - Creates sliding windows of size `window_size`
    - Transposes to `(batch, features, time)` format for Conv1d
 
@@ -112,7 +110,7 @@ python train.py \
       ↓ Decoder (Upsample+Conv with strides=[2,3,5] + residual blocks)
    Reconstruction (B, 48, 150)
 
-   *If `--augment_rotation` is enabled, each training batch is randomly rotated around the origin before encoding so the learned codes become rotation-invariant.*
+   *Note: All input data is automatically normalized to a canonical reference frame (centered at origin, facing upward) during preprocessing, making the learned codes rotation-invariant.*
    ```
 
 3. **Loss Computation**:
@@ -210,7 +208,7 @@ python train.py \
 
 **If overfitting** (train loss << val loss):
 - Use non-overlapping windows: `--stride 150`
-- Add more data or augmentation
+- Add more training data
 - Reduce model capacity: `--hidden_dims 32 64 128`
 
 ## Expected Training Time

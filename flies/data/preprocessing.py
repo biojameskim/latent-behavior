@@ -5,6 +5,7 @@ Extracts from prepare_data.py the core preprocessing logic:
 - Loads multi-fly sequences
 - Splits into individual fly trajectories
 - Removes flies with NaN values
+- Normalizes trajectories to canonical frame (centered at origin, facing upward)
 """
 
 import logging
@@ -15,6 +16,58 @@ import numpy as np
 LOG = logging.getLogger(__name__)
 
 FlyID = Tuple[str, int]
+
+
+def normalize_trajectory(keypoints):
+    """
+    Normalize a fly trajectory to a canonical reference frame.
+
+    This makes all flies start at (0, 0) and face upward (positive y direction),
+    removing translation and rotation variance. This is better than rotation
+    augmentation because it directly creates rotation-invariant representations.
+
+    Args:
+        keypoints: (n_frames, 24, 2) array of keypoints
+            - Keypoint 19: ellipse_center (body center x, y)
+            - Keypoint 20: ellipse_orientation (cos_ori, sin_ori)
+
+    Returns:
+        normalized_keypoints: (n_frames, 24, 2) array in canonical frame
+    """
+    keypoints = keypoints.copy()
+
+    # Get the initial body center position (keypoint 19 at frame 0)
+    initial_center = keypoints[0, 19, :].copy()  # (x, y)
+
+    # Get the initial orientation (keypoint 20 at frame 0)
+    cos_ori, sin_ori = keypoints[0, 20, :]
+
+    # Calculate the angle of current orientation
+    # (cos_ori, sin_ori) represents a unit vector in the direction the fly faces
+    current_angle = np.arctan2(sin_ori, cos_ori)
+
+    # We want the fly to face upward (0, 1), which is at angle pi/2
+    # So we need to rotate by: target_angle - current_angle
+    rotation_angle = np.pi / 2 - current_angle
+
+    # Create 2D rotation matrix
+    cos_rot = np.cos(rotation_angle)
+    sin_rot = np.sin(rotation_angle)
+    rotation_matrix = np.array([
+        [cos_rot, -sin_rot],
+        [sin_rot, cos_rot]
+    ])
+
+    # Apply transformation to all frames
+    for frame_idx in range(keypoints.shape[0]):
+        # Center: translate so initial body center is at (0, 0)
+        keypoints[frame_idx, :, :] -= initial_center
+
+        # Rotate: apply rotation to align fly to face upward
+        # For each keypoint, apply rotation matrix
+        keypoints[frame_idx, :, :] = keypoints[frame_idx, :, :] @ rotation_matrix.T
+
+    return keypoints
 
 
 def _is_allowed_fly(sequence_id: str, fly_idx: int, allowed_fly_ids: Optional[Set[FlyID]]) -> bool:
@@ -36,13 +89,14 @@ def load_and_preprocess_for_vqvae(data_file, allowed_fly_ids: Optional[Set[FlyID
         - Social behavior can be analyzed post hoc by examining how social context
           affects the sequence of syllables, e.g., "Fly 1 does syllable A more
           often when near other flies doing syllable B"
+    - Normalizes each trajectory to canonical frame (centered at origin, facing upward)
 
     Args:
         data_file (str): Path to .npy file containing fly tracking data
 
     Returns:
         list of dict: Each dict contains:
-            - 'keypoints': (n_frames, 24, 2) array of keypoints for this fly
+            - 'keypoints': (n_frames, 24, 2) array of normalized keypoints for this fly
             - 'sequence_id': original sequence id
             - 'fly_idx': index of the fly in the original multi-fly data
     """
@@ -71,9 +125,10 @@ def load_and_preprocess_for_vqvae(data_file, allowed_fly_ids: Optional[Set[FlyID
             if not has_any_nan:
                 if not _is_allowed_fly(seq_id, fly_idx, allowed_fly_ids):
                     continue
-                # Perfect tracking - keep entire trajectory
+                # Perfect tracking - normalize to canonical frame and keep trajectory
+                fly_keypoints_normalized = normalize_trajectory(fly_keypoints)
                 all_fly_trajectories.append({
-                    'keypoints': fly_keypoints,  # (4500, 24, 2) - guaranteed no NaNs
+                    'keypoints': fly_keypoints_normalized,  # (4500, 24, 2) - normalized, no NaNs
                     'sequence_id': seq_id,
                     'fly_idx': fly_idx,
                 })
