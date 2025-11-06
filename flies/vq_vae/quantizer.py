@@ -27,8 +27,10 @@ class VectorQuantizer(nn.Module):
         self.commitment_cost = commitment_cost
 
         # Initialize codebook with uniform distribution
+        # Use a larger scale to better match typical encoder outputs after normalization
         self.embedding = nn.Embedding(num_embeddings, embedding_dim)
-        self.embedding.weight.data.uniform_(-1/num_embeddings, 1/num_embeddings)
+        # After GroupNorm, encoder outputs typically have std ~ 1, so init codebook similarly
+        self.embedding.weight.data.normal_(0, 1.0)
 
     def forward(self, z):
         """

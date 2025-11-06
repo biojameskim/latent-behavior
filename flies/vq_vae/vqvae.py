@@ -146,6 +146,10 @@ class VQVAE(nn.Module):
             strides=strides
         )
 
+        # Add normalization before quantizer to prevent scale mismatch
+        # This ensures encoder outputs and codebook embeddings have similar magnitudes
+        self.pre_quantizer_norm = nn.GroupNorm(num_groups=1, num_channels=embedding_dim)
+
         self.quantizer = VectorQuantizer(
             num_embeddings=num_embeddings,
             embedding_dim=embedding_dim,
@@ -179,6 +183,9 @@ class VQVAE(nn.Module):
         # Encode
         z = self.encoder(x)
 
+        # Normalize before quantization to prevent scale mismatch
+        z = self.pre_quantizer_norm(z)
+
         # Quantize
         z_q, vq_loss, perplexity, encodings, encoding_indices = self.quantizer(z)
 
@@ -200,6 +207,7 @@ class VQVAE(nn.Module):
             encoding_indices (torch.Tensor): Discrete code indices (batch_size, reduced_time_steps)
         """
         z = self.encoder(x)
+        z = self.pre_quantizer_norm(z)
         _, _, _, _, encoding_indices = self.quantizer(z)
         return encoding_indices
 
