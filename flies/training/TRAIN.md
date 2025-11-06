@@ -90,6 +90,31 @@ python train.py \
 
 ## Training Process
 
+### ⚠️ Critical Fix: Pre-Quantizer Normalization
+
+**IMPORTANT:** A GroupNorm layer has been added before quantization to prevent codebook collapse.
+
+**Why this fix was needed:**
+- Without normalization, encoder outputs had very different scales than codebook embeddings
+- This caused VQ loss to be extremely high (600+) and poor quantization
+- Example: encoder outputs ranged [-123, 122] while codebook was [-0.06, 0.06]
+
+**What the fix does:**
+- Normalizes encoder outputs before quantization using GroupNorm
+- Ensures encoder and codebook are on similar scales
+- Initializes codebook with normal(0, 1) instead of tiny uniform range
+
+**If you have old checkpoints:**
+- ❌ DO NOT continue training from old checkpoints
+- ❌ Old checkpoints are incompatible with the new architecture
+- ✅ MUST train from scratch with the fixed code
+- ✅ Use `train_fixed.sh` script for recommended hyperparameters
+
+**Expected results with fix:**
+- VQ loss < 10 (was 600+)
+- Perplexity > 50 for 64 codes (good utilization)
+- Stable training curves
+
 ### What Happens During Training
 
 1. **Data Loading**:
@@ -105,6 +130,8 @@ python train.py \
    Input (B, 48, 150)
       ↓ Encoder (Conv1d with strides=[5,3,2] + residual blocks)
    Latent (B, 512, 5)
+      ↓ GroupNorm (CRITICAL: normalizes before quantization)
+   Normalized Latent (B, 512, 5)
       ↓ Vector Quantizer (nearest neighbor lookup)
    Quantized (B, 512, 5)
       ↓ Decoder (Upsample+Conv with strides=[2,3,5] + residual blocks)
