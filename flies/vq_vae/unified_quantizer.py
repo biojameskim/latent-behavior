@@ -96,7 +96,7 @@ class UnifiedQuantizer(nn.Module):
                 decay=method_kwargs.get('decay', 0.8),
                 commitment_weight=commitment_cost,
                 accept_image_fmap=False,  # We're using sequences, not images
-                channel_last=False  # False means channel first: (B, C, T) after permute becomes (B, T, C)
+                channel_last=True  # True because we permute to (B, T, C) in _forward_vq_improved
             )
             self._forward = self._forward_vq_improved
 
@@ -297,6 +297,12 @@ class UnifiedQuantizer(nn.Module):
 
     def _compute_perplexity(self, indices):
         """Compute perplexity from indices to measure codebook usage"""
+        # Get the actual codebook size for this method
+        codebook_size = self.get_codebook_size()
+
+        # Ensure indices are long type (required for one_hot)
+        indices = indices.long()
+
         # Handle different index shapes
         if indices.dim() == 3:  # (B, T, num_quantizers) for RVQ
             indices = indices.reshape(-1, indices.shape[-1])
@@ -304,14 +310,14 @@ class UnifiedQuantizer(nn.Module):
             perplexities = []
             for q in range(indices.shape[-1]):
                 q_indices = indices[:, q]
-                encodings = F.one_hot(q_indices, self.num_embeddings).float()
+                encodings = F.one_hot(q_indices, codebook_size).float()
                 avg_probs = encodings.mean(dim=0)
                 perp = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
                 perplexities.append(perp)
             return torch.stack(perplexities).mean()
         else:  # (B, T) for standard VQ/FSQ/LFQ
             indices_flat = indices.reshape(-1)
-            encodings = F.one_hot(indices_flat, self.num_embeddings).float()
+            encodings = F.one_hot(indices_flat, codebook_size).float()
             avg_probs = encodings.mean(dim=0)
             perplexity = torch.exp(-torch.sum(avg_probs * torch.log(avg_probs + 1e-10)))
             return perplexity
