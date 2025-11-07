@@ -43,10 +43,12 @@ LOG = logging.getLogger(__name__)
 
 
 # Quantizer configurations for different methods
+# Note: If a method doesn't specify 'codebook_size_override', it uses --num_embeddings from command line
 QUANTIZER_CONFIGS = {
     'vq': {
         'method': 'vq',
-        'kwargs': {}
+        'kwargs': {},
+        'codebook_size_override': None  # Uses --num_embeddings (32 in your case)
     },
     'vq_improved': {
         'method': 'vq_improved',
@@ -56,14 +58,17 @@ QUANTIZER_CONFIGS = {
             'threshold_ema_dead_code': 2,  # Replace dead codes
             'kmeans_init': True,  # K-means initialization
             'kmeans_iters': 10
-        }
+        },
+        'codebook_size_override': None  # Uses --num_embeddings (32)
+        # Can set to specific value like 64 if you want different from VQ
     },
     'fsq': {
         'method': 'fsq',
         'kwargs': {
             'levels': [8, 5, 5, 5]  # ~1000 implicit codes (8*5*5*5=1000)
             # Can also try: [7, 5, 5, 3] = 525 codes
-        }
+        },
+        'codebook_size_override': None  # FSQ doesn't use num_embeddings (uses levels instead)
     },
     'rvq': {
         'method': 'rvq',
@@ -72,16 +77,19 @@ QUANTIZER_CONFIGS = {
             'kmeans_init': True,
             'threshold_ema_dead_code': 2,
             'shared_codebook': False  # Separate codebook per quantizer
-        }
+        },
+        'codebook_size_override': None  # Uses --num_embeddings (32 per quantizer)
+        # Can set to 64 if you want larger codebooks: 'codebook_size_override': 64
     },
     'lfq': {
         'method': 'lfq',
         'kwargs': {
             'lfq_dim': 16,  # LFQ works best with smaller dims
-            'codebook_size': 64,  # 2^6 codes
+            'codebook_size': 64,  # 2^6 codes (LFQ uses this, not num_embeddings)
             'entropy_loss_weight': 0.1,
             'diversity_gamma': 1.0
-        }
+        },
+        'codebook_size_override': None  # LFQ uses 'codebook_size' in kwargs instead
     }
 }
 
@@ -218,12 +226,19 @@ def train_single_method(method_name, args, train_loader, val_loader, device):
     config = QUANTIZER_CONFIGS[method_name]
     LOG.info(f"Quantizer config: {config}")
 
+    # Use method-specific codebook size if specified, otherwise use command line arg
+    num_embeddings = config.get('codebook_size_override', args.num_embeddings)
+    if config.get('codebook_size_override') is not None:
+        LOG.info(f"Using method-specific codebook size: {num_embeddings} (override)")
+    else:
+        LOG.info(f"Using command-line codebook size: {num_embeddings}")
+
     # Create model
     model = UnifiedVQVAE(
         input_dim=args.input_dim,
         hidden_dims=args.hidden_dims,
         embedding_dim=args.embedding_dim,
-        num_embeddings=args.num_embeddings,
+        num_embeddings=num_embeddings,
         sequence_length=args.window_size,
         num_residual_blocks=args.num_residual_blocks,
         commitment_cost=args.commitment_cost,

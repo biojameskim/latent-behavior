@@ -96,7 +96,7 @@ class UnifiedQuantizer(nn.Module):
                 decay=method_kwargs.get('decay', 0.8),
                 commitment_weight=commitment_cost,
                 accept_image_fmap=False,  # We're using sequences, not images
-                channel_first=True  # Input is (B, C, T)
+                channel_last=False  # False means channel first: (B, C, T) after permute becomes (B, T, C)
             )
             self._forward = self._forward_vq_improved
 
@@ -114,6 +114,9 @@ class UnifiedQuantizer(nn.Module):
             # FSQ requires dim to match number of levels
             assert len(levels) <= embedding_dim, \
                 f"FSQ levels ({len(levels)}) must be <= embedding_dim ({embedding_dim})"
+
+            # Store levels for get_codebook_size()
+            self.fsq_levels = levels
 
             # We need a projection to go from embedding_dim to len(levels)
             self.pre_fsq_proj = nn.Linear(embedding_dim, len(levels))
@@ -147,8 +150,8 @@ class UnifiedQuantizer(nn.Module):
                 threshold_ema_dead_code=method_kwargs.get('threshold_ema_dead_code', 2),
                 shared_codebook=method_kwargs.get('shared_codebook', False),
                 stochastic_sample_codes=method_kwargs.get('stochastic_sample_codes', False),
-                commitment_weight=commitment_cost,
-                channel_first=True
+                commitment_weight=commitment_cost
+                # Note: ResidualVQ doesn't support channel_first parameter
             )
             self._forward = self._forward_rvq
 
@@ -177,8 +180,9 @@ class UnifiedQuantizer(nn.Module):
                 diversity_gamma=method_kwargs.get('diversity_gamma', 1.0),
                 commitment_loss_weight=commitment_cost,
                 num_codebooks=method_kwargs.get('num_codebooks', 1),
-                keep_num_codebooks_dim=False,
-                channel_first=True
+                keep_num_codebooks_dim=False
+                # Note: LFQ doesn't support channel_first parameter
+                # Expects (B, ..., dim) format which we provide via permutation
             )
             self._forward = self._forward_lfq
 
@@ -316,8 +320,8 @@ class UnifiedQuantizer(nn.Module):
         """Return effective codebook size"""
         if self.method == 'fsq':
             # FSQ codebook size is product of levels
-            levels = self.quantizer.levels
-            return int(torch.prod(torch.tensor(levels)).item())
+            import numpy as np
+            return int(np.prod(self.fsq_levels))
         elif self.method == 'lfq':
             return self.quantizer.codebook_size
         else:
