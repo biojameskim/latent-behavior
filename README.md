@@ -30,12 +30,12 @@ cd flies/training
 bash train_fixed.sh
 
 # 2. VAE (continuous latent space)
-python train_unified.py --model_type vae \
+python train_continuous.py --model_type vae \
     --config ../configs/vae_continuous.yaml \
     --output_dir outputs/vae_continuous
 
 # 3. Transformer forecaster (continuous-to-continuous)
-python train_unified.py --model_type transformer \
+python train_continuous.py --model_type transformer \
     --config ../configs/transformer_forecaster.yaml \
     --output_dir outputs/transformer_forecaster
 ```
@@ -93,7 +93,7 @@ latent-behavior/
 │   │   ├── TRAIN.md                    # Training documentation
 │   │   ├── NORMALIZATION_GUIDE.md      # Guide to normalization fix
 │   │   ├── train.py                    # Original VQ-VAE training script
-│   │   ├── train_unified.py            # Unified training for all models - NEW ⭐
+│   │   ├── train_continuous.py            # Unified training for all models - NEW ⭐
 │   │   ├── train_fixed.sh              # VQ-VAE training (with normalization)
 │   │   ├── train_simple.sh             # VQ-VAE training (minimal fix)
 │   │   ├── inspect_checkpoint.py       # Checkpoint inspection utility

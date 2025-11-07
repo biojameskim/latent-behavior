@@ -6,9 +6,9 @@ Unified training script for all model types:
 4. Hybrid (continuous → discrete token extraction)
 
 Usage:
-    python train_unified.py --model_type vqvae --config configs/vqvae.yaml
-    python train_unified.py --model_type vae --config configs/vae.yaml
-    python train_unified.py --model_type transformer --config configs/transformer.yaml
+    python train_continuous.py --model_type vqvae --config configs/vqvae.yaml
+    python train_continuous.py --model_type vae --config configs/vae.yaml
+    python train_continuous.py --model_type transformer --config configs/transformer.yaml
 """
 
 import argparse

@@ -34,7 +34,7 @@ bash train_fixed.sh  # Your existing script
 
 ```bash
 cd flies/training
-python train_unified.py \
+python train_continuous.py \
     --model_type vae \
     --config ../configs/vae_continuous.yaml \
     --output_dir outputs/vae_continuous \
@@ -46,17 +46,17 @@ python train_unified.py \
 **Variants to try:**
 ```bash
 # β-VAE for more disentangled representations
-python train_unified.py --model_type beta_vae --config ../configs/vae_continuous.yaml --output_dir outputs/beta_vae
+python train_continuous.py --model_type beta_vae --config ../configs/vae_continuous.yaml --output_dir outputs/beta_vae
 
 # Annealed VAE for more stable training
-python train_unified.py --model_type annealed_vae --config ../configs/vae_continuous.yaml --output_dir outputs/annealed_vae
+python train_continuous.py --model_type annealed_vae --config ../configs/vae_continuous.yaml --output_dir outputs/annealed_vae
 ```
 
 ### 3. Train Transformer Forecaster (Continuous-to-Continuous)
 
 ```bash
 cd flies/training
-python train_unified.py \
+python train_continuous.py \
     --model_type transformer \
     --config ../configs/transformer_forecaster.yaml \
     --output_dir outputs/transformer_forecaster \
@@ -190,7 +190,7 @@ batch_size: 32  # Instead of 64
 
 **Solution**: Use annealed VAE
 ```bash
-python train_unified.py --model_type annealed_vae ...
+python train_continuous.py --model_type annealed_vae ...
 ```
 
 ### 3. Slow Training
@@ -226,7 +226,7 @@ flies/
 │   └── discrete_from_continuous.py # Extract discrete from continuous
 ├── training/
 │   ├── train.py                    # Original VQ-VAE training ✅
-│   ├── train_unified.py            # Train all model types ✨ NEW
+│   ├── train_continuous.py            # Train all model types ✨ NEW
 │   └── train_fixed.sh              # VQ-VAE training script ✅
 ├── evaluation/                      ✨ NEW
 │   └── compare_models.py           # Comparison framework
