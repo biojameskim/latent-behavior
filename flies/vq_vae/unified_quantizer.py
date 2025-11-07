@@ -115,6 +115,9 @@ class UnifiedQuantizer(nn.Module):
             assert len(levels) <= embedding_dim, \
                 f"FSQ levels ({len(levels)}) must be <= embedding_dim ({embedding_dim})"
 
+            # Store levels for get_codebook_size()
+            self.fsq_levels = levels
+
             # We need a projection to go from embedding_dim to len(levels)
             self.pre_fsq_proj = nn.Linear(embedding_dim, len(levels))
             self.post_fsq_proj = nn.Linear(len(levels), embedding_dim)
@@ -317,8 +320,8 @@ class UnifiedQuantizer(nn.Module):
         """Return effective codebook size"""
         if self.method == 'fsq':
             # FSQ codebook size is product of levels
-            levels = self.quantizer.levels
-            return int(torch.prod(torch.tensor(levels)).item())
+            import numpy as np
+            return int(np.prod(self.fsq_levels))
         elif self.method == 'lfq':
             return self.quantizer.codebook_size
         else:
