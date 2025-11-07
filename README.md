@@ -23,11 +23,18 @@ conda activate lat-beh
 
 ### Train Models
 
+**Note**: There are two training scripts:
+- `train_unified.py` - Select VQ-VAE variants (groupnorm vs simple)
+- `train_continuous.py` - Train all model types (VQ-VAE, VAE, Transformer, LSTM)
+
 ```bash
 cd flies/training
 
-# 1. VQ-VAE (discrete tokenization)
+# 1. VQ-VAE (discrete tokenization) - Quick start
 bash train_fixed.sh
+
+# OR use train_unified.py to select VQ-VAE variant:
+python train_unified.py --model_type groupnorm --train_data ../data/fly_data/fly_keypoints.npy
 
 # 2. VAE (continuous latent space)
 python train_continuous.py --model_type vae \
@@ -93,9 +100,11 @@ latent-behavior/
 │   │   ├── TRAIN.md                    # Training documentation
 │   │   ├── NORMALIZATION_GUIDE.md      # Guide to normalization fix
 │   │   ├── train.py                    # Original VQ-VAE training script
-│   │   ├── train_continuous.py            # Unified training for all models - NEW ⭐
+│   │   ├── train_unified.py            # VQ-VAE variant selector (groupnorm vs simple)
+│   │   ├── train_continuous.py         # Train all model types (VQ-VAE, VAE, Transformer, LSTM) - NEW ⭐
 │   │   ├── train_fixed.sh              # VQ-VAE training (with normalization)
 │   │   ├── train_simple.sh             # VQ-VAE training (minimal fix)
+│   │   ├── analyze_runs.py             # Compare training runs
 │   │   ├── inspect_checkpoint.py       # Checkpoint inspection utility
 │   │   └── debug_*.py                  # Debugging utilities
 │   │
