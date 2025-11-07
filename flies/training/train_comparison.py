@@ -227,10 +227,11 @@ def train_single_method(method_name, args, train_loader, val_loader, device):
     LOG.info(f"Quantizer config: {config}")
 
     # Use method-specific codebook size if specified, otherwise use command line arg
-    num_embeddings = config.get('codebook_size_override', args.num_embeddings)
-    if config.get('codebook_size_override') is not None:
+    num_embeddings = config.get('codebook_size_override')
+    if num_embeddings is not None:
         LOG.info(f"Using method-specific codebook size: {num_embeddings} (override)")
     else:
+        num_embeddings = args.num_embeddings
         LOG.info(f"Using command-line codebook size: {num_embeddings}")
 
     # Create model
