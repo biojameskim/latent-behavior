@@ -17,8 +17,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Tuple, Dict
 
-from .seq_encoder import SeqEncoder
-from .seq_decoder import SeqDecoder
+from .seq_encoder import SequenceEncoder
+from .seq_decoder import SequenceDecoder
+from .vqvae import compute_strides_for_length
 
 
 class ContinuousVAE(nn.Module):
@@ -35,6 +36,8 @@ class ContinuousVAE(nn.Module):
         latent_dim: Dimension of continuous latent space (replaces embedding_dim in VQ-VAE)
         num_residual_blocks: Number of residual blocks per layer
         kl_weight: Weight for KL divergence loss (β in β-VAE)
+        sequence_length: Expected input sequence length (must have sufficient prime factors)
+        strides: Manual stride values (auto-computed if None)
     """
 
     def __init__(
@@ -45,37 +48,42 @@ class ContinuousVAE(nn.Module):
         num_residual_blocks: int = 2,
         kl_weight: float = 1.0,
         sequence_length: int = 150,
+        strides: list = None,
     ):
         super().__init__()
 
         self.input_dim = input_dim
         self.latent_dim = latent_dim
         self.kl_weight = kl_weight
+        self.sequence_length = sequence_length
+
+        # Compute optimal strides if not provided (same as VQ-VAE)
+        if strides is None:
+            strides = compute_strides_for_length(sequence_length, len(hidden_dims))
+
+        self.strides = strides
 
         # Encoder: produces continuous embeddings
-        self.encoder = SeqEncoder(
+        self.encoder = SequenceEncoder(
             input_dim=input_dim,
             hidden_dims=hidden_dims,
             embedding_dim=latent_dim,
             num_residual_blocks=num_residual_blocks,
-            sequence_length=sequence_length,
+            strides=strides,
         )
 
-        # Compute compressed sequence length
-        self.compressed_length = self.encoder.compute_compressed_length(sequence_length)
-
         # Split encoder output into mean and log-variance
-        # We'll project from latent_dim to 2*latent_dim, then split
         self.fc_mu = nn.Conv1d(latent_dim, latent_dim, kernel_size=1)
         self.fc_logvar = nn.Conv1d(latent_dim, latent_dim, kernel_size=1)
 
         # Decoder: reconstructs from continuous latent
-        self.decoder = SeqDecoder(
+        self.decoder = SequenceDecoder(
             embedding_dim=latent_dim,
             hidden_dims=list(reversed(hidden_dims)),
             output_dim=input_dim,
+            output_length=sequence_length,
             num_residual_blocks=num_residual_blocks,
-            sequence_length=sequence_length,
+            strides=list(reversed(strides)),
         )
 
     def encode(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
