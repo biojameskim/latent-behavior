@@ -71,8 +71,8 @@ def load_fly_filters(
     return train_ids, val_ids
 
 
-def train_epoch(model, train_loader, optimizer, device, epoch):
-    """Train for one epoch."""
+def train_epoch(model, train_loader, optimizer, device, epoch, grad_clip_norm=None):
+    """Train for one epoch with optional gradient clipping."""
     model.train()
 
     total_loss = 0
@@ -95,6 +95,11 @@ def train_epoch(model, train_loader, optimizer, device, epoch):
         # Backward pass
         optimizer.zero_grad()
         loss.backward()
+
+        # Gradient clipping for stability
+        if grad_clip_norm is not None:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+
         optimizer.step()
 
         # Accumulate metrics
@@ -260,7 +265,8 @@ def main(args):
             train_loader,
             optimizer,
             device,
-            epoch
+            epoch,
+            grad_clip_norm=args.grad_clip_norm
         )
         scheduler.step()
         LOG.info(
@@ -369,6 +375,8 @@ if __name__ == '__main__':
                         help='T_max for CosineAnnealingLR scheduler (defaults to epochs)')
     parser.add_argument('--num_workers', type=int, default=4,
                         help='Number of dataloader workers')
+    parser.add_argument('--grad_clip_norm', type=float, default=None,
+                        help='Gradient clipping max norm (None = no clipping, try 1.0 for stability)')
 
     # Output arguments
     parser.add_argument('--output_dir', type=str, default='./outputs',
