@@ -1,5 +1,3 @@
-flies/AnimalPoseForecasting
-
 flies/visualization/animations/
 flies/visualization/animation_frames/
 
@@ -8,3 +6,5 @@ flies/training/NOTES.md
 */__pycache__/
 
 flies/training/outputs/
+flies/visualization/recon_viz/
+flies/training/comparison.png

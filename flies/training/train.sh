@@ -7,7 +7,7 @@
 # 3. Use EMA for codebook updates (more stable)
 # 4. Better hyperparameters based on analysis
 
-python train_unified.py \
+python train.py \
     --model_type groupnorm \
     --train_data ../../../../data/fly_data/fly_group_train.npy \
     --val_data ../../../../data/fly_data/fly_group_train.npy \

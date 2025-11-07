@@ -10,6 +10,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
+if __package__ in (None, ""):
+    # Allow running the script directly without needing to modify PYTHONPATH.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 from data.dataset import create_dataloaders
 from vq_vae.vqvae import VQVAE
 

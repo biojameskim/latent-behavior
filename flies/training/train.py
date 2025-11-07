@@ -1,9 +1,12 @@
 """
-Training script for VQ-VAE on fly behavior sequences.
+Unified training script for VQ-VAE with model type selection.
+
+Choose between:
+- 'groupnorm': VQ-VAE with pre-quantizer normalization (recommended)
+- 'simple': VQ-VAE with only initialization fix (minimal)
 
 Usage:
-    python train.py --train_data /path/to/data.npy \
-        --fly_split_file /path/to/fly_splits.json --val_data /path/to/data.npy
+    python train_unified.py --model_type groupnorm --train_data /path/to/data.npy
 """
 
 import argparse
@@ -19,7 +22,6 @@ import torch.nn.functional as F
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from data.dataset import create_dataloaders
-from vq_vae.vqvae import VQVAE
 
 logging.basicConfig(
     level=logging.INFO,
@@ -69,8 +71,8 @@ def load_fly_filters(
     return train_ids, val_ids
 
 
-def train_epoch(model, train_loader, optimizer, device, epoch):
-    """Train for one epoch."""
+def train_epoch(model, train_loader, optimizer, device, epoch, grad_clip_norm=None):
+    """Train for one epoch with optional gradient clipping."""
     model.train()
 
     total_loss = 0
@@ -93,6 +95,11 @@ def train_epoch(model, train_loader, optimizer, device, epoch):
         # Backward pass
         optimizer.zero_grad()
         loss.backward()
+
+        # Gradient clipping for stability
+        if grad_clip_norm is not None:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip_norm)
+
         optimizer.step()
 
         # Accumulate metrics
@@ -160,6 +167,16 @@ def validate(model, val_loader, device):
 
 
 def main(args):
+    # Import the appropriate model based on model_type
+    if args.model_type == 'simple':
+        from vq_vae.vqvae_simple import VQVAESimple as VQVAE
+        LOG.info("Using SIMPLE model (no pre-quantizer normalization)")
+    elif args.model_type == 'groupnorm':
+        from vq_vae.vqvae import VQVAE
+        LOG.info("Using GroupNorm model (with pre-quantizer normalization)")
+    else:
+        raise ValueError(f"Unknown model_type: {args.model_type}. Choose 'simple' or 'groupnorm'")
+
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     LOG.info(f"Using device: {device}")
@@ -224,7 +241,7 @@ def main(args):
 
     # Create optimizer
     optimizer = torch.optim.AdamW(
-        model.parameters(), 
+        model.parameters(),
         lr=args.lr,
         weight_decay=args.weight_decay,
         betas=(args.beta1, args.beta2)
@@ -248,7 +265,8 @@ def main(args):
             train_loader,
             optimizer,
             device,
-            epoch
+            epoch,
+            grad_clip_norm=args.grad_clip_norm
         )
         scheduler.step()
         LOG.info(
@@ -277,6 +295,7 @@ def main(args):
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                     'val_loss': val_metrics['loss'],
+                    'model_type': args.model_type,
                     'args': vars(args)
                 }, checkpoint_path)
                 LOG.info(f"Saved best model to {checkpoint_path}")
@@ -289,6 +308,7 @@ def main(args):
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'train_metrics': train_metrics,
+                'model_type': args.model_type,
                 'args': vars(args)
             }, checkpoint_path)
             LOG.info(f"Saved checkpoint to {checkpoint_path}")
@@ -299,6 +319,7 @@ def main(args):
         'epoch': args.epochs,
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
+        'model_type': args.model_type,
         'args': vars(args)
     }, final_path)
     LOG.info(f"Saved final model to {final_path}")
@@ -307,6 +328,11 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train VQ-VAE on fly behavior data')
+
+    # Model type selection
+    parser.add_argument('--model_type', type=str, default='groupnorm',
+                        choices=['simple', 'groupnorm'],
+                        help='Model type: "simple" (no normalization) or "groupnorm" (with pre-quantizer normalization)')
 
     # Data arguments
     parser.add_argument('--train_data', type=str, required=True,
@@ -323,9 +349,9 @@ if __name__ == '__main__':
                         help='Input dimension (24 keypoints * 2 coords)')
     parser.add_argument('--hidden_dims', type=int, nargs='+', default=[64, 128, 256],
                         help='Hidden dimensions for encoder/decoder')
-    parser.add_argument('--embedding_dim', type=int, default=512,
+    parser.add_argument('--embedding_dim', type=int, default=256,
                         help='Embedding dimension')
-    parser.add_argument('--num_embeddings', type=int, default=512,
+    parser.add_argument('--num_embeddings', type=int, default=32,
                         help='Number of codebook entries (behavior syllables)')
     parser.add_argument('--num_residual_blocks', type=int, default=2,
                         help='Number of residual blocks per layer')
@@ -333,7 +359,7 @@ if __name__ == '__main__':
                         help='Commitment cost (beta) for VQ loss')
 
     # Training arguments
-    parser.add_argument('--batch_size', type=int, default=32,
+    parser.add_argument('--batch_size', type=int, default=128,
                         help='Batch size')
     parser.add_argument('--epochs', type=int, default=100,
                         help='Number of epochs')
@@ -349,6 +375,8 @@ if __name__ == '__main__':
                         help='T_max for CosineAnnealingLR scheduler (defaults to epochs)')
     parser.add_argument('--num_workers', type=int, default=4,
                         help='Number of dataloader workers')
+    parser.add_argument('--grad_clip_norm', type=float, default=None,
+                        help='Gradient clipping max norm (None = no clipping, try 1.0 for stability)')
 
     # Output arguments
     parser.add_argument('--output_dir', type=str, default='./outputs',

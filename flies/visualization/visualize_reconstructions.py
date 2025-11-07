@@ -6,7 +6,7 @@ Example:
     python visualize_reconstructions.py \
         --data_file ../../../data/fly_data/fly_group_train.npy \
         --checkpoint ../training/outputs/run_11_01_25_v5/best_model.pt \
-        --fly_split_file ../data/fly_data/fly_splits.json \
+        --fly_split_file ../data/fly_data/fly_split.json \
         --val_split_name val \
         --output_dir ./visualization/recon_viz \
 """
@@ -16,8 +16,13 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import sys
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+
+if __package__ in (None, ""):
+    # Allow running the script directly without needing to modify PYTHONPATH.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import matplotlib.pyplot as plt
 import torch

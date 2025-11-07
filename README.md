@@ -23,18 +23,16 @@ conda activate lat-beh
 
 ### Train Models
 
-**Note**: There are two training scripts:
-- `train_unified.py` - Select VQ-VAE variants (groupnorm vs simple)
+**Note**: There are two main training scripts:
+- `train.py` - Train VQ-VAE models (discrete tokenization)
 - `train_continuous.py` - Train all model types (VQ-VAE, VAE, Transformer, LSTM)
 
 ```bash
 cd flies/training
 
-# 1. VQ-VAE (discrete tokenization) - Quick start
-bash train_fixed.sh
-
-# OR use train_unified.py to select VQ-VAE variant:
-python train_unified.py --model_type groupnorm --train_data ../data/fly_data/fly_keypoints.npy
+# 1. VQ-VAE (discrete tokenization)
+python train.py --train_data ../data/fly_data/fly_keypoints.npy \
+    --output_dir outputs/vqvae
 
 # 2. VAE (continuous latent space)
 python train_continuous.py --model_type vae \
@@ -79,40 +77,35 @@ latent-behavior/
 │   │
 │   ├── vq_vae/                         # Model implementations
 │   │   ├── VQVAE.md                    # VQ-VAE documentation
-│   │   ├── vqvae.py                    # VQ-VAE (discrete) - main implementation ⭐
-│   │   ├── vqvae_simple.py             # VQ-VAE with minimal fix (alternative)
-│   │   ├── vae_continuous.py           # VAE (continuous) - NEW ⭐
+│   │   ├── vqvae.py                    # VQ-VAE (discrete) - main implementation
+│   │   ├── vae_continuous.py           # VAE (continuous)
 │   │   ├── seq_encoder.py              # 1D convolutional encoder
 │   │   ├── seq_decoder.py              # 1D convolutional decoder
 │   │   ├── quantizer.py                # Vector quantizer (with normalization fix)
-│   │   ├── quantizer_simple.py         # Vector quantizer (minimal fix)
 │   │   └── residual.py                 # Residual blocks
 │   │
-│   ├── forecasting/                    # Continuous-to-continuous models - NEW ⭐
+│   ├── forecasting/                    # Continuous-to-continuous models
 │   │   ├── __init__.py
 │   │   └── continuous_forecaster.py    # Transformer & LSTM forecasters
 │   │
-│   ├── hybrid/                         # Hybrid discrete-continuous approaches - NEW ⭐
+│   ├── hybrid/                         # Hybrid discrete-continuous approaches
 │   │   ├── __init__.py
 │   │   └── discrete_from_continuous.py # Extract discrete tokens from continuous models
 │   │
 │   ├── training/                       # Training scripts and utilities
 │   │   ├── TRAIN.md                    # Training documentation
 │   │   ├── NORMALIZATION_GUIDE.md      # Guide to normalization fix
-│   │   ├── train.py                    # Original VQ-VAE training script
-│   │   ├── train_unified.py            # VQ-VAE variant selector (groupnorm vs simple)
-│   │   ├── train_continuous.py         # Train all model types (VQ-VAE, VAE, Transformer, LSTM) - NEW ⭐
-│   │   ├── train_fixed.sh              # VQ-VAE training (with normalization)
-│   │   ├── train_simple.sh             # VQ-VAE training (minimal fix)
+│   │   ├── train.py                    # VQ-VAE training script
+│   │   ├── train_continuous.py         # Train all model types (VQ-VAE, VAE, Transformer, LSTM)
 │   │   ├── analyze_runs.py             # Compare training runs
 │   │   ├── inspect_checkpoint.py       # Checkpoint inspection utility
 │   │   └── debug_*.py                  # Debugging utilities
 │   │
-│   ├── evaluation/                     # Model comparison and evaluation - NEW ⭐
+│   ├── evaluation/                     # Model comparison and evaluation
 │   │   ├── __init__.py
 │   │   └── compare_models.py           # Comprehensive comparison framework
 │   │
-│   ├── examples/                       # Example workflows - NEW ⭐
+│   ├── examples/                       # Example workflows
 │   │   └── full_comparison_workflow.py # Complete comparison pipeline
 │   │
 │   ├── visualization/                  # Visualization tools
@@ -123,11 +116,9 @@ latent-behavior/
 │   │   ├── create_video.py             # Create behavior videos
 │   │   └── plot_mabe_flies.py          # Plot fly keypoints
 │   │
-│   └── configs/                        # Configuration files - NEW ⭐
+│   └── configs/                        # Configuration files
 │       ├── vae_continuous.yaml         # VAE configuration
 │       └── transformer_forecaster.yaml # Transformer configuration
-│
-└── notebooks/                          # Jupyter notebooks (if any)
 ```
 
 ## 🔬 Approaches Implemented
@@ -265,9 +256,9 @@ If you use this code, please cite:
 ```bibtex
 @software{latent_behavior_flies,
   title = {Latent Behavior Analysis: Discrete vs Continuous Tokenization},
-  author = {Your Name},
-  year = {2024},
-  url = {https://github.com/yourusername/latent-behavior}
+  author = {James Kim},
+  year = {2025},
+  url = {https://github.com/biojameskim/latent-behavior}
 }
 ```
 
