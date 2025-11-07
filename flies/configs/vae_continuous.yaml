@@ -1,0 +1,28 @@
+# Configuration for Continuous VAE
+
+# Data
+data_file: ../data/fly_data/fly_keypoints.npy
+fly_split_file: ../data/fly_data/fly_split.json
+window_size: 150  # 5 seconds @ 30fps
+stride: 75  # 50% overlap
+
+# Architecture
+input_dim: 48  # 24 keypoints × 2 coords
+hidden_dims: [64, 128, 256]
+latent_dim: 128  # Continuous latent dimension (vs embedding_dim in VQ-VAE)
+num_residual_blocks: 2
+
+# VAE-specific
+kl_weight: 1.0  # β in β-VAE (1.0 for standard VAE, 4-10 for disentanglement)
+
+# Training
+batch_size: 128
+epochs: 100
+lr: 1.0e-4
+weight_decay: 0.0
+betas: [0.9, 0.99]
+num_workers: 4
+save_every: 10
+
+# Run name
+run_name: continuous_vae_baseline

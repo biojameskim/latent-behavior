@@ -1,0 +1,28 @@
+# Configuration for Transformer Forecaster (continuous-to-continuous)
+
+# Data
+data_file: ../data/fly_data/fly_keypoints.npy
+fly_split_file: ../data/fly_data/fly_split.json
+context_length: 75  # Past frames to condition on (2.5 seconds)
+forecast_length: 75  # Future frames to predict (2.5 seconds)
+stride: 75  # Non-overlapping windows
+
+# Architecture
+input_dim: 48  # 24 keypoints × 2 coords
+d_model: 256  # Transformer dimension
+nhead: 8  # Number of attention heads
+num_layers: 6  # Transformer encoder layers
+dim_feedforward: 1024  # FFN hidden dimension
+dropout: 0.1
+
+# Training
+batch_size: 64  # Smaller batch for transformer
+epochs: 100
+lr: 1.0e-4
+weight_decay: 0.01  # Some regularization for transformer
+betas: [0.9, 0.98]
+num_workers: 4
+save_every: 10
+
+# Run name
+run_name: transformer_forecaster_baseline
