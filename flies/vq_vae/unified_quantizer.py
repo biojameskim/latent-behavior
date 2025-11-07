@@ -300,6 +300,9 @@ class UnifiedQuantizer(nn.Module):
         # Get the actual codebook size for this method
         codebook_size = self.get_codebook_size()
 
+        # Ensure indices are long type (required for one_hot)
+        indices = indices.long()
+
         # Handle different index shapes
         if indices.dim() == 3:  # (B, T, num_quantizers) for RVQ
             indices = indices.reshape(-1, indices.shape[-1])
