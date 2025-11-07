@@ -151,7 +151,36 @@ echo "  - $OUTPUT_DIR/{method_name}/best_model.pt"
 #   - training_history.json: Loss curves
 #   - checkpoint_epoch_*.pt: Periodic checkpoints
 
-# Compare results:
+# ============================================================================
+# 6. ANALYSIS AFTER TRAINING - Compare all methods with plots!
+# ============================================================================
+
 echo ""
-echo "Compare methods by looking at comparison_summary.json:"
+echo "Training complete! Check results in:"
+echo "  - $OUTPUT_DIR/comparison_summary.json"
+echo "  - $OUTPUT_DIR/{method_name}/training_history.json"
+echo "  - $OUTPUT_DIR/{method_name}/best_model.pt"
+
+# Quick look at summary
+echo ""
+echo "Quick summary:"
 cat $OUTPUT_DIR/comparison_summary.json | python -m json.tool
+
+echo ""
+echo "============================================================================"
+echo "Now run the analysis script to generate comparison plots:"
+echo "============================================================================"
+echo ""
+echo "python flies/analysis/analyze_comparison.py --results_dir $OUTPUT_DIR"
+echo ""
+
+# Actually run the analysis (uncomment to auto-run after training)
+# python flies/analysis/analyze_comparison.py --results_dir $OUTPUT_DIR
+
+# This will generate:
+#   - loss_curves.png: Training/validation loss for all methods
+#   - vq_metrics.png: VQ loss and perplexity curves
+#   - final_comparison_bars.png: Bar chart comparing final metrics
+#   - learning_curves_grid.png: Individual learning curves per method
+#   - summary_table.png: Visual summary table
+#   - summary_table.txt: Text summary for easy viewing
