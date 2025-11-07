@@ -96,7 +96,7 @@ class UnifiedQuantizer(nn.Module):
                 decay=method_kwargs.get('decay', 0.8),
                 commitment_weight=commitment_cost,
                 accept_image_fmap=False,  # We're using sequences, not images
-                channel_first=True  # Input is (B, C, T)
+                channel_last=False  # False means channel first: (B, C, T) after permute becomes (B, T, C)
             )
             self._forward = self._forward_vq_improved
 
@@ -147,8 +147,8 @@ class UnifiedQuantizer(nn.Module):
                 threshold_ema_dead_code=method_kwargs.get('threshold_ema_dead_code', 2),
                 shared_codebook=method_kwargs.get('shared_codebook', False),
                 stochastic_sample_codes=method_kwargs.get('stochastic_sample_codes', False),
-                commitment_weight=commitment_cost,
-                channel_first=True
+                commitment_weight=commitment_cost
+                # Note: ResidualVQ doesn't support channel_first parameter
             )
             self._forward = self._forward_rvq
 
@@ -177,8 +177,9 @@ class UnifiedQuantizer(nn.Module):
                 diversity_gamma=method_kwargs.get('diversity_gamma', 1.0),
                 commitment_loss_weight=commitment_cost,
                 num_codebooks=method_kwargs.get('num_codebooks', 1),
-                keep_num_codebooks_dim=False,
-                channel_first=True
+                keep_num_codebooks_dim=False
+                # Note: LFQ doesn't support channel_first parameter
+                # Expects (B, ..., dim) format which we provide via permutation
             )
             self._forward = self._forward_lfq
 
