@@ -25,7 +25,16 @@ def load_checkpoint(path):
 def analyze_run(run_dir):
     """Analyze all checkpoints in a run directory."""
     run_dir = Path(run_dir)
-    checkpoints = sorted(run_dir.glob('checkpoint_epoch_*.pt'))
+
+    # Find checkpoint files and sort numerically by epoch number
+    checkpoints = list(run_dir.glob('checkpoint_epoch_*.pt'))
+
+    # Sort by epoch number (not alphabetically!)
+    def extract_epoch(path):
+        # Extract number from "checkpoint_epoch_10.pt" -> 10
+        return int(path.stem.split('_')[-1])
+
+    checkpoints = sorted(checkpoints, key=extract_epoch)
 
     if not checkpoints:
         print(f"No checkpoints found in {run_dir}")
