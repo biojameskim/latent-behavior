@@ -25,27 +25,62 @@ def _to_numpy(window: torch.Tensor) -> np.ndarray:
 
 def window_to_pose(window: torch.Tensor) -> np.ndarray:
     """
-    Convert a dataset window (48, T) or (T, 48) into (T, 24, 2).
+    Convert VQ-VAE output format to pose format for visualization.
+
+    VQ-VAE works with flattened feature vectors, but visualization needs
+    structured poses with explicit keypoints and coordinates.
+
+    Transformations:
+        Input:  (48, T) or (T, 48) - flattened [x0, y0, x1, y1, ..., x23, y23]
+                   ↓
+        Output: (T, 24, 2) - structured [time, keypoint, (x,y)]
+
+    Example:
+        window shape (48, 150) - 150 frames, 48 features
+        → pose shape (150, 24, 2) - 150 frames, 24 keypoints, (x,y) coords
+
+    Each frame has:
+        - 24 keypoints (head, thorax, legs, etc.)
+        - 2 coordinates per keypoint (x, y)
+        - Total: 24 × 2 = 48 features
+
+    Args:
+        window: VQ-VAE decoder output or dataset window
+                Shape: (48, T) or (T, 48) or (batch, 48, T)
+
+    Returns:
+        pose: Structured pose array
+              Shape: (T, 24, 2) where pose[t, k] = (x, y) for keypoint k at time t
     """
     arr = _to_numpy(window)
+
+    # Handle different input formats
     if arr.ndim == 3:
+        # Batch format: (batch, 48, T) or (batch, T, 48)
         if arr.shape[0] == 48:
-            arr = arr
+            arr = arr  # Already (48, ...)
         elif arr.shape[1] == 48:
-            arr = arr.transpose(1, 0, 2)
+            arr = arr.transpose(1, 0, 2)  # (batch, 48, T) → (48, batch, T)
         else:
             raise ValueError(f"Expected 48 feature dimension, got shape {arr.shape}")
     elif arr.ndim == 2:
+        # Single sequence: (48, T) or (T, 48)
         if arr.shape[0] == 48:
-            arr = arr
+            arr = arr  # Already (48, T)
         elif arr.shape[1] == 48:
-            arr = arr.T
+            arr = arr.T  # (T, 48) → (48, T)
         else:
             raise ValueError(f"Expected 48 feature dimension, got shape {arr.shape}")
     else:
         raise ValueError(f"Unsupported window shape {arr.shape}")
 
     timesteps = arr.shape[-1]
+
+    # Reshape flat features to structured pose
+    # (48, T) → (24, 2, T) → (T, 24, 2)
+    #  ↓         ↓           ↓
+    # flat    keypoints   time-major
+    #         × coords    format
     pose = arr.reshape(24, 2, timesteps).transpose(2, 0, 1)
     return pose
 

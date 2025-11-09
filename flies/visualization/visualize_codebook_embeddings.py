@@ -124,11 +124,28 @@ def latent_length(model: VQVAE, input_dim: int, sequence_length: int, device: to
 
 
 def expand_sequence(seq: Sequence[int], target_len: int) -> torch.Tensor:
+    """
+    Expand or tile a custom code sequence to match the latent length.
+
+    Examples:
+        seq=[12, 42, 17], target_len=5
+        → [12, 42, 17, 12, 42]  (tile and truncate)
+
+        seq=[12, 42, 17, 5, 28], target_len=5
+        → [12, 42, 17, 5, 28]  (exact match, no change)
+
+        seq=[42], target_len=5
+        → [42, 42, 42, 42, 42]  (repeat single code)
+
+    This allows you to specify custom sequences and have them automatically
+    fit the model's expected latent temporal length.
+    """
     if len(seq) == 0:
         raise ValueError("Custom code sequence must contain at least one index.")
     tensor = torch.tensor(seq, dtype=torch.long)
     if tensor.numel() == target_len:
         return tensor
+    # Tile the sequence enough times to cover target_len, then truncate
     repeats = (target_len + tensor.numel() - 1) // tensor.numel()
     tensor = tensor.repeat(repeats)[:target_len]
     return tensor
@@ -139,7 +156,32 @@ def decode_embeddings(
     indices: torch.Tensor,
     device: torch.device,
 ) -> torch.Tensor:
+    """
+    Decode discrete code indices to continuous behavior trajectories.
+
+    This is the CORE FUNCTION for codebook visualization:
+    1. Takes discrete code indices (e.g., [42, 42, 42, 42, 42])
+    2. Looks up embeddings from the learned codebook
+    3. Passes through the decoder to reconstruct behavior
+    4. Returns continuous keypoint trajectories
+
+    Args:
+        model: Trained VQ-VAE with decoder and codebook
+        indices: (batch, latent_length) - discrete code indices
+                 Example: [[42, 42, 42, 42, 42]] to visualize code 42
+        device: Where to run computation
+
+    Returns:
+        decoded: (batch, 48, 150) - reconstructed fly keypoint trajectories
+                 48 = 24 keypoints × 2 coordinates (x,y)
+                 150 = sequence length in frames
+    """
     with torch.no_grad():
+        # model.decode_codes internally:
+        # 1. Converts indices to one-hot: [42] → [0,0,...,1,...,0] at position 42
+        # 2. Multiplies by codebook weights to get embeddings
+        # 3. Passes embeddings through decoder CNN
+        # 4. Returns reconstructed behavior
         decoded = model.decode_codes(indices.to(device))
     return decoded.cpu()
 
@@ -205,17 +247,57 @@ def visualize_codebook(
     show_arena: bool,
     dpi: int,
 ) -> None:
+    """
+    Visualize ALL codebook embeddings by decoding each one.
+
+    CONCEPT: For each code in the codebook (0, 1, 2, ..., num_embeddings-1):
+    1. Create a sequence where that code is repeated: [42, 42, 42, 42, 42]
+    2. Decode it to see what behavior it represents
+    3. Visualize selected frames from the decoded behavior
+
+    This answers: "What does code #42 actually mean in terms of fly behavior?"
+
+    Example:
+        - Code 12 might represent "walking forward"
+        - Code 42 might represent "turning left"
+        - Code 17 might represent "grooming"
+
+    Args:
+        model: Trained VQ-VAE
+        num_embeddings: Size of codebook (e.g., 64, 128, 512)
+        latent_len: Temporal length of latent codes (e.g., 5)
+                   Computed as: sequence_length / product(strides)
+        frame_indices: Which frames to show in each visualization
+        chunk_size: Decode this many embeddings at once (memory control)
+        device: CPU or CUDA
+        output_dir: Where to save images
+        show_arena: Whether to overlay arena outline
+        dpi: Image resolution
+    """
     ensure_directory(output_dir)
     LOG.info("Rendering %d embeddings → %s", num_embeddings, output_dir)
 
+    # all_indices = [0, 1, 2, 3, ..., num_embeddings-1]
     all_indices = torch.arange(num_embeddings, dtype=torch.long)
+
+    # Process in chunks to avoid memory issues
     for start in range(0, num_embeddings, chunk_size):
         end = min(start + chunk_size, num_embeddings)
-        batch_indices = all_indices[start:end]
-        latent_codes = batch_indices[:, None].repeat(1, latent_len)
+        batch_indices = all_indices[start:end]  # e.g., [0, 1, 2, ..., 63]
 
+        # CRITICAL: Repeat each code across latent_len timesteps
+        # Example: code 42 → [42, 42, 42, 42, 42]
+        # Shape: (batch_size, latent_len)
+        latent_codes = batch_indices[:, None].repeat(1, latent_len)
+        # batch_indices[:, None]: (batch,) → (batch, 1)
+        # .repeat(1, latent_len): (batch, 1) → (batch, latent_len)
+
+        # Decode all codes in this chunk
+        # Input: (batch, latent_len) discrete indices
+        # Output: (batch, 48, 150) continuous keypoint trajectories
         decoded = decode_embeddings(model, latent_codes, device=device)
 
+        # Save one image per embedding
         for idx, window in zip(batch_indices.tolist(), decoded):
             save_path = output_dir / f"embedding_{idx:04d}.png"
             plot_embedding_window(
