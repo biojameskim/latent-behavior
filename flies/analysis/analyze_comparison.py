@@ -138,10 +138,12 @@ def plot_vq_loss_and_perplexity(all_results: Dict, save_path: Path):
                    label=f'{method.upper()} (train)',
                    color=color, linewidth=2, alpha=0.8)
 
-        if 'val_vq' in history:
-            epochs = np.arange(1, len(history['val_vq']) + 1)
+        # Check both 'val_vq' and 'val_vq_loss' for backward compatibility
+        val_vq = history.get('val_vq') or history.get('val_vq_loss')
+        if val_vq:
+            epochs = np.arange(1, len(val_vq) + 1)
             color = colors.get(method, '#333333')
-            ax.plot(epochs, history['val_vq'],
+            ax.plot(epochs, val_vq,
                    label=f'{method.upper()} (val)',
                    color=color, linewidth=2, alpha=0.4, linestyle='--')
 
@@ -161,10 +163,12 @@ def plot_vq_loss_and_perplexity(all_results: Dict, save_path: Path):
                    label=f'{method.upper()} (train)',
                    color=color, linewidth=2, alpha=0.8)
 
-        if 'val_perp' in history:
-            epochs = np.arange(1, len(history['val_perp']) + 1)
+        # Check both 'val_perp' and 'val_perplexity' for backward compatibility
+        val_perp = history.get('val_perp') or history.get('val_perplexity')
+        if val_perp:
+            epochs = np.arange(1, len(val_perp) + 1)
             color = colors.get(method, '#333333')
-            ax.plot(epochs, history['val_perp'],
+            ax.plot(epochs, val_perp,
                    label=f'{method.upper()} (val)',
                    color=color, linewidth=2, alpha=0.4, linestyle='--')
 
@@ -194,9 +198,20 @@ def plot_final_comparison_bars(all_results: Dict, save_path: Path):
 
     for method in methods:
         history = all_results[method]
+        # Support both naming conventions
         for metric in final_metrics.keys():
-            if metric in history and len(history[metric]) > 0:
-                final_metrics[metric].append(history[metric][-1])
+            # Check for both old and new key names
+            if metric == 'val_recon':
+                data = history.get('val_recon') or history.get('val_recon_loss')
+            elif metric == 'val_vq':
+                data = history.get('val_vq') or history.get('val_vq_loss')
+            elif metric == 'val_perp':
+                data = history.get('val_perp') or history.get('val_perplexity')
+            else:
+                data = history.get(metric)
+
+            if data and len(data) > 0:
+                final_metrics[metric].append(data[-1])
             else:
                 final_metrics[metric].append(np.nan)
 
@@ -263,24 +278,30 @@ def create_summary_table(all_results: Dict, save_path: Path):
     for method, history in all_results.items():
         row = {'Method': method.upper()}
 
-        # Final metrics
+        # Final metrics (support both naming conventions)
         if 'val_loss' in history and len(history['val_loss']) > 0:
             row['Final Val Loss'] = f"{history['val_loss'][-1]:.4f}"
         else:
             row['Final Val Loss'] = 'N/A'
 
-        if 'val_recon' in history and len(history['val_recon']) > 0:
-            row['Final Recon Loss'] = f"{history['val_recon'][-1]:.4f}"
+        # Check both 'val_recon' and 'val_recon_loss' for backward compatibility
+        val_recon = history.get('val_recon') or history.get('val_recon_loss')
+        if val_recon and len(val_recon) > 0:
+            row['Final Recon Loss'] = f"{val_recon[-1]:.4f}"
         else:
             row['Final Recon Loss'] = 'N/A'
 
-        if 'val_vq' in history and len(history['val_vq']) > 0:
-            row['Final VQ Loss'] = f"{history['val_vq'][-1]:.4f}"
+        # Check both 'val_vq' and 'val_vq_loss' for backward compatibility
+        val_vq = history.get('val_vq') or history.get('val_vq_loss')
+        if val_vq and len(val_vq) > 0:
+            row['Final VQ Loss'] = f"{val_vq[-1]:.4f}"
         else:
             row['Final VQ Loss'] = 'N/A'
 
-        if 'val_perp' in history and len(history['val_perp']) > 0:
-            row['Final Perplexity'] = f"{history['val_perp'][-1]:.2f}"
+        # Check both 'val_perp' and 'val_perplexity' for backward compatibility
+        val_perp = history.get('val_perp') or history.get('val_perplexity')
+        if val_perp and len(val_perp) > 0:
+            row['Final Perplexity'] = f"{val_perp[-1]:.2f}"
         else:
             row['Final Perplexity'] = 'N/A'
 
@@ -418,9 +439,11 @@ def plot_learning_curves_grid(all_results: Dict, save_path: Path):
             epochs = np.arange(1, len(history['train_recon']) + 1)
             ax.plot(epochs, history['train_recon'],
                    label='Train Recon', color=color, linewidth=2, alpha=0.8)
-        if 'val_recon' in history:
-            epochs = np.arange(1, len(history['val_recon']) + 1)
-            ax.plot(epochs, history['val_recon'],
+        # Check both naming conventions
+        val_recon = history.get('val_recon') or history.get('val_recon_loss')
+        if val_recon:
+            epochs = np.arange(1, len(val_recon) + 1)
+            ax.plot(epochs, val_recon,
                    label='Val Recon', color=color, linewidth=2, alpha=0.5, linestyle='--')
 
         if 'train_vq' in history:
