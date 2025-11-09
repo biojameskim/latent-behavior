@@ -364,17 +364,17 @@ def train_single_method(method_name, args, train_loader, val_loader, device):
         # Update learning rate
         scheduler.step()
 
-        # Log metrics
+        # Log metrics (use short key names for compatibility with analyze_comparison.py)
         history['train_loss'].append(train_metrics['loss'])
-        history['train_recon_loss'].append(train_metrics['recon_loss'])
-        history['train_vq_loss'].append(train_metrics['vq_loss'])
-        history['train_perplexity'].append(train_metrics['perplexity'])
+        history['train_recon'].append(train_metrics['recon_loss'])
+        history['train_vq'].append(train_metrics['vq_loss'])
+        history['train_perp'].append(train_metrics['perplexity'])
 
         if val_loader is not None:
             history['val_loss'].append(val_metrics['loss'])
-            history['val_recon_loss'].append(val_metrics['recon_loss'])
-            history['val_vq_loss'].append(val_metrics['vq_loss'])
-            history['val_perplexity'].append(val_metrics['perplexity'])
+            history['val_recon'].append(val_metrics['recon_loss'])
+            history['val_vq'].append(val_metrics['vq_loss'])
+            history['val_perp'].append(val_metrics['perplexity'])
 
         # Print progress
         if val_loader is not None:
@@ -520,7 +520,7 @@ def main(args):
     for method, result in results.items():
         best_val = result['best_val_loss']
         final_train = result['history']['train_loss'][-1] if result['history']['train_loss'] else float('inf')
-        final_perp = result['history']['val_perplexity'][-1] if result['history']['val_perplexity'] else 0
+        final_perp = result['history']['val_perp'][-1] if result['history']['val_perp'] else 0
 
         summary[method] = {
             'best_val_loss': best_val,
