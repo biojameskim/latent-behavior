@@ -13,7 +13,7 @@ After training a VQ-VAE model, these scripts help you:
 
 ### 1. Visualize All Codebook Embeddings
 
-See what each discrete code represents:
+**For standard VQ or quick RVQ overview**:
 
 ```bash
 python visualize_codebook_embeddings.py \
@@ -23,6 +23,17 @@ python visualize_codebook_embeddings.py \
 ```
 
 **Output**: One image per codebook entry showing the behavior it represents.
+
+**For RVQ (Residual VQ) with detailed hierarchical analysis**:
+
+```bash
+python visualize_rvq_codebook.py \
+    --checkpoint ../training/outputs/rvq_run/best_model.pt \
+    --output_dir rvq_viz \
+    --mode all
+```
+
+**Output**: Hierarchical visualizations showing individual quantizers, combinations, and ablations.
 
 ### 2. Visualize Reconstructions on Real Data
 
@@ -57,11 +68,12 @@ python tutorial_codebook_viz.py \
 
 ### Core Visualization Scripts
 
-| File | Purpose | Input | Output |
-|------|---------|-------|--------|
-| `visualize_codebook_embeddings.py` | Decode all codebook embeddings | Checkpoint | Images of each code's behavior |
-| `visualize_reconstructions.py` | Evaluate reconstruction quality | Checkpoint + data | Original vs reconstructed comparisons |
-| `tutorial_codebook_viz.py` | Learn the basics interactively | Checkpoint | Educational examples |
+| File | Purpose | Best For | Output |
+|------|---------|----------|--------|
+| `visualize_codebook_embeddings.py` | Decode all codebook embeddings | Standard VQ, quick RVQ overview | Images of each code's behavior |
+| `visualize_rvq_codebook.py` | **RVQ-specific hierarchical visualization** | **RVQ models** | Individual quantizers, combinations, ablations |
+| `visualize_reconstructions.py` | Evaluate reconstruction quality | Any model (VQ, RVQ, etc.) | Original vs reconstructed comparisons |
+| `tutorial_codebook_viz.py` | Learn the basics interactively | Learning & debugging | Educational examples |
 
 ### Helper Modules
 
@@ -75,7 +87,9 @@ python tutorial_codebook_viz.py \
 
 | File | Contents |
 |------|----------|
-| `CODEBOOK_VISUALIZATION_GUIDE.md` | **📖 Comprehensive guide** - read this first! |
+| `CODEBOOK_VISUALIZATION_GUIDE.md` | **📖 Comprehensive guide for standard VQ** - read this first! |
+| `RVQ_VISUALIZATION_GUIDE.md` | **📖 Guide for RVQ (Residual VQ)** - hierarchical quantization |
+| `UNDERSTANDING_REPEATED_CODES.md` | Why repeated codes show motion, not static poses |
 | `VISUALIZATION.md` | General visualization documentation |
 | `README.md` | This file |
 
