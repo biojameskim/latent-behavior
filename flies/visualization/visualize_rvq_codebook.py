@@ -19,11 +19,15 @@ Example:
 
 import argparse
 import logging
+import sys
 from pathlib import Path
 from typing import List, Optional
 
 import matplotlib.pyplot as plt
 import torch
+
+# Add parent directory to path so 'flies' module can be imported
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from flies.visualization.plot_mabe_flies import plot_arena, plot_fly
 from flies.visualization.reconstruction import window_to_pose
