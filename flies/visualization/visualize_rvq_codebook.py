@@ -44,7 +44,7 @@ def parse_args():
     parser.add_argument(
         "--mode",
         default="all",
-        choices=["individual", "combinations", "ablations", "all"],
+        choices=["individual", "combinations", "ablations", "cumulative", "all"],
         help="Visualization mode",
     )
     parser.add_argument("--device", default="auto", choices=["auto", "cpu", "cuda"])
@@ -175,13 +175,25 @@ def visualize_individual_quantizers(
     dpi: int,
 ):
     """
-    Visualize individual quantizer contributions.
+    Visualize individual quantizer contributions (diagonal matrix pattern).
 
     For each quantizer q, we decode codes where:
     - Quantizer q has a specific code
-    - All other quantizers are set to 0 (or another baseline)
+    - All other quantizers are set to 0
+
+    Structure (looks like a diagonal matrix):
+    - Q0: [code, 0, 0, 0]
+    - Q1: [0, code, 0, 0]
+    - Q2: [0, 0, code, 0]
+    - Q3: [0, 0, 0, code]
 
     This shows what each quantizer learns independently.
+
+    CAVEAT: Setting other quantizers to 0 might not be a meaningful baseline
+    since code 0 could represent a specific behavior. This shows isolated
+    contributions but may not reflect realistic usage.
+
+    For progressive refinement (Q0, Q0+Q1, Q0+Q1+Q2, etc.), use --mode cumulative
 
     RVQ structure:
         output = quantizer_0(x) + quantizer_1(residual_1) + ... + quantizer_n(residual_n)
@@ -305,6 +317,123 @@ def visualize_combinations(
         fig.tight_layout()
 
         save_path = output_dir / f"combination_{sample_idx:03d}.png"
+        fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
+        plt.close(fig)
+
+
+def visualize_cumulative(
+    model: UnifiedVQVAE,
+    num_embeddings: int,
+    num_quantizers: int,
+    latent_len: int,
+    device: torch.device,
+    output_dir: Path,
+    num_samples: int,
+    frame_indices: List[int],
+    show_arena: bool,
+    dpi: int,
+):
+    """
+    Visualize progressive cumulative refinement (forward pass).
+
+    Shows how quantizers progressively add detail:
+    - Q0 only:        [code, 0, 0, 0]          (coarse)
+    - Q0 + Q1:        [code, code, 0, 0]       (add detail)
+    - Q0 + Q1 + Q2:   [code, code, code, 0]    (more detail)
+    - Full:           [code, code, code, code] (full refinement)
+
+    This shows the "coarse to fine" hierarchical refinement.
+    """
+    output_dir = output_dir / "cumulative"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    LOG.info(f"Visualizing cumulative refinement → {output_dir}")
+
+    for sample_idx in range(num_samples):
+        # Sample random codes for each quantizer
+        sample_codes = torch.randint(0, num_embeddings, (num_quantizers,), device=device)
+
+        # Create cumulative versions
+        poses = {}
+        labels = {}
+
+        # Q0 only
+        indices_q0 = torch.zeros(1, latent_len, num_quantizers, dtype=torch.long, device=device)
+        indices_q0[:, :, 0] = sample_codes[0]
+        with torch.no_grad():
+            recon = model.decode_codes(indices_q0)
+        poses["q0"] = window_to_pose(recon[0].cpu())
+        labels["q0"] = f"Q0 only (code {sample_codes[0]})"
+
+        # Q0 + Q1
+        if num_quantizers >= 2:
+            indices_q01 = torch.zeros(1, latent_len, num_quantizers, dtype=torch.long, device=device)
+            indices_q01[:, :, 0] = sample_codes[0]
+            indices_q01[:, :, 1] = sample_codes[1]
+            with torch.no_grad():
+                recon = model.decode_codes(indices_q01)
+            poses["q01"] = window_to_pose(recon[0].cpu())
+            labels["q01"] = f"Q0 + Q1 ({sample_codes[0]}, {sample_codes[1]})"
+
+        # Q0 + Q1 + Q2
+        if num_quantizers >= 3:
+            indices_q012 = torch.zeros(1, latent_len, num_quantizers, dtype=torch.long, device=device)
+            indices_q012[:, :, 0] = sample_codes[0]
+            indices_q012[:, :, 1] = sample_codes[1]
+            indices_q012[:, :, 2] = sample_codes[2]
+            with torch.no_grad():
+                recon = model.decode_codes(indices_q012)
+            poses["q012"] = window_to_pose(recon[0].cpu())
+            labels["q012"] = f"Q0 + Q1 + Q2 ({sample_codes[0]}, {sample_codes[1]}, {sample_codes[2]})"
+
+        # Full (all quantizers)
+        if num_quantizers >= 4:
+            indices_full = torch.zeros(1, latent_len, num_quantizers, dtype=torch.long, device=device)
+            for q in range(num_quantizers):
+                indices_full[:, :, q] = sample_codes[q]
+            with torch.no_grad():
+                recon = model.decode_codes(indices_full)
+            poses["full"] = window_to_pose(recon[0].cpu())
+            code_str = ", ".join(str(c.item()) for c in sample_codes)
+            labels["full"] = f"Full: Q0-Q{num_quantizers-1} ({code_str})"
+
+        # Plot all cumulative stages
+        n_stages = len(poses)
+        fig, axes = plt.subplots(n_stages, len(frame_indices), figsize=(4 * len(frame_indices), 3 * n_stages))
+
+        if n_stages == 1:
+            axes = [axes]
+        if len(frame_indices) == 1:
+            axes = [[ax] for ax in axes]
+
+        for row_idx, (key, pose) in enumerate(poses.items()):
+            for col_idx, frame in enumerate(frame_indices):
+                ax = axes[row_idx][col_idx]
+                frame = frame % pose.shape[0]
+
+                if show_arena:
+                    plot_arena(ax=ax)
+
+                plot_fly(
+                    pose[frame],
+                    ax=ax,
+                    skelcolor="tab:blue",
+                    kptcolors="tab:blue",
+                    kpt_alpha=0.9,
+                    skel_alpha=0.9,
+                )
+
+                if col_idx == 0:
+                    ax.set_ylabel(labels[key], fontsize=10)
+                if row_idx == 0:
+                    ax.set_title(f"Frame {frame}")
+
+                ax.set_aspect("equal")
+
+        fig.suptitle(f"Cumulative Refinement {sample_idx}")
+        fig.tight_layout()
+
+        save_path = output_dir / f"cumulative_{sample_idx:03d}.png"
         fig.savefig(save_path, dpi=dpi, bbox_inches="tight")
         plt.close(fig)
 
@@ -442,6 +571,20 @@ def main():
 
     if args.mode in ["combinations", "all"]:
         visualize_combinations(
+            model,
+            num_embeddings,
+            num_quantizers,
+            latent_len,
+            device,
+            output_dir,
+            args.num_samples,
+            args.frame_indices,
+            args.show_arena,
+            args.dpi,
+        )
+
+    if args.mode in ["cumulative", "all"]:
+        visualize_cumulative(
             model,
             num_embeddings,
             num_quantizers,
