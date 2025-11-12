@@ -37,20 +37,46 @@ python visualize_rvq_codebook.py \
 
 ### 2. Visualize Reconstructions on Real Data
 
-Evaluate reconstruction quality:
+Evaluate reconstruction quality on actual fly behavior:
 
 ```bash
 python visualize_reconstructions.py \
     --data_file ../../data/fly_data/fly_group_train.npy \
     --checkpoint ../training/outputs/my_run/best_model.pt \
-    --fly_split_file ../../data/fly_data/fly_split.json \
-    --val_split_name val \
     --output_dir recon_viz
 ```
 
-**Output**:
-- Window overlays: Individual window comparisons (original vs reconstructed)
-- Sequence overlays: Full trajectory comparisons
+**What it does**:
+- Reconstructs **all validation windows** from your dataset
+- Stitches them into full trajectories (up to 4500 frames per fly)
+- **Visualizes a sample** for quality inspection
+
+**Default visualization**:
+- 5 individual window overlays (original vs reconstructed)
+- 5 sequence arena overlays (all flies in the arena)
+- Shows frames 0 and last frame for windows
+- Shows frame 0 for sequences
+
+**Parameters to control what's visualized**:
+```bash
+python visualize_reconstructions.py \
+    --data_file ../../data/fly_data/fly_group_train.npy \
+    --checkpoint ../training/outputs/my_run/best_model.pt \
+    --output_dir recon_viz \
+    --window_overlays 20 \           # Number of windows to visualize (default: 5)
+    --max_sequences 10 \             # Number of sequences to visualize (default: 5)
+    --sequence_frames 0 100 200 \    # Which frames to show (default: [0])
+    --window_frames 0 74 149 \       # Frames within windows (default: [0, -1])
+    --num_frames 4500                # Max frames per trajectory (default: 4500)
+```
+
+**Output structure**:
+- `recon_viz/window_overlays/window_0000.png` through `window_NNNN.png`
+  - Original (blue) vs reconstructed (orange) fly poses
+  - Shows quality on individual behavior windows
+- `recon_viz/sequence_overlays/sequence_id_frame_N.png`
+  - Full arena view with all flies
+  - Shows stitched trajectory quality
 
 ### 3. Tutorial: Understanding the Basics
 
@@ -89,6 +115,7 @@ python tutorial_codebook_viz.py \
 |------|----------|
 | `CODEBOOK_VISUALIZATION_GUIDE.md` | **📖 Comprehensive guide for standard VQ** - read this first! |
 | `RVQ_VISUALIZATION_GUIDE.md` | **📖 Guide for RVQ (Residual VQ)** - hierarchical quantization |
+| `RECONSTRUCTION_PARAMETERS.md` | **📖 Reconstruction parameter reference** - window_overlays, sequence_frames, etc. |
 | `UNDERSTANDING_REPEATED_CODES.md` | Why repeated codes show motion, not static poses |
 | `VISUALIZATION.md` | General visualization documentation |
 | `README.md` | This file |

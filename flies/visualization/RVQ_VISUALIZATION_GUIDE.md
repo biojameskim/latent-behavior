@@ -171,29 +171,44 @@ python visualize_rvq_codebook.py \
     --num_samples 10
 ```
 
-**Modes**:
-- `individual`: Visualize each quantizer's codes independently
-- `combinations`: Random combinations of all quantizers
-- `ablations`: Progressive ablation study
-- `all`: All of the above
+**Parameters**:
+- `--mode`: Which visualization type to run
+  - `individual`: Visualize each quantizer's codes independently (diagonal pattern)
+  - `combinations`: Random combinations of all quantizers
+  - `ablations`: Progressive removal (Full → -Q3 → -Q2&Q3 → Q0 only)
+  - `cumulative`: Progressive addition (Q0 → Q0+Q1 → Q0+Q1+Q2 → Full) **← Recommended!**
+  - `all`: All of the above
+- `--num_samples 10`: Number of different random code combinations to visualize
+  - For cumulative/ablations/combinations modes
+  - Each sample = different random codes from the codebook
+  - More samples = better sense of codebook diversity
 
 **Output**:
 ```
 rvq_viz/
 ├── individual_quantizers/
-│   ├── quantizer_0_code_0000.png
-│   ├── quantizer_0_code_0010.png
-│   ├── quantizer_1_code_0000.png
+│   ├── quantizer_0_code_0000.png  # Q0 with code 0: [0, 0, 0, 0]
+│   ├── quantizer_0_code_0010.png  # Q0 with code 10: [10, 0, 0, 0]
+│   ├── quantizer_1_code_0000.png  # Q1 with code 0: [0, 0, 0, 0]
 │   └── ...
-├── combinations/
-│   ├── combination_000.png
-│   ├── combination_001.png
+├── cumulative/                     # num_samples visualizations
+│   ├── cumulative_000.png         # 1st random code combo: Q0 → Q0+Q1 → Q0+Q1+Q2 → Full
+│   ├── cumulative_001.png         # 2nd random code combo
 │   └── ...
-└── ablations/
-    ├── ablation_000.png  # Shows full → Q0-Q2 → Q0-Q1 → Q0 only
-    ├── ablation_001.png
+├── combinations/                   # num_samples visualizations
+│   ├── combination_000.png        # 1st random full combination: [a, b, c, d]
+│   ├── combination_001.png        # 2nd random full combination: [e, f, g, h]
+│   └── ...
+└── ablations/                      # num_samples visualizations
+    ├── ablation_000.png           # 1st random: Full → -Q3 → -Q2&Q3 → Q0 only
+    ├── ablation_001.png           # 2nd random combo
     └── ...
 ```
+
+**What the numbers mean**:
+- `000`, `001`, `002`, ... = Sample index (which random code combination)
+- Each file shows the same **visualization type** but for **different codes**
+- Example: `cumulative_000.png` might use codes `[12, 5, 3, 1]`, while `cumulative_001.png` uses `[42, 17, 9, 2]`
 
 ### Option 2: Use Standard Script (Quick)
 
