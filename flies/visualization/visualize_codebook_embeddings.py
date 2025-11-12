@@ -23,6 +23,7 @@ import torch
 from flies.visualization.plot_mabe_flies import plot_arena, plot_fly
 from flies.visualization.reconstruction import window_to_pose
 from flies.vq_vae.vqvae import VQVAE
+from flies.vq_vae.vqvae_unified import UnifiedVQVAE
 
 
 LOG = logging.getLogger(__name__)
@@ -89,25 +90,64 @@ def resolve_device(requested: str) -> torch.device:
 
 
 def build_model(checkpoint_path: Path, device: torch.device) -> tuple[VQVAE, dict]:
+    """
+    Load model from checkpoint, auto-detecting standard VQVAE vs UnifiedVQVAE.
+
+    Supports:
+    - Standard VQVAE (quantizer_method not in args)
+    - UnifiedVQVAE with any quantizer (vq, vq_improved, fsq, rvq, lfq)
+
+    For RVQ models, consider using visualize_rvq_codebook.py for more
+    detailed hierarchical visualizations.
+    """
     checkpoint = torch.load(checkpoint_path, map_location=device)
     if "args" not in checkpoint:
         raise KeyError(f"Checkpoint {checkpoint_path} missing 'args' payload.")
 
     ckpt_args = checkpoint["args"]
-    model = VQVAE(
-        input_dim=ckpt_args["input_dim"],
-        hidden_dims=ckpt_args["hidden_dims"],
-        embedding_dim=ckpt_args["embedding_dim"],
-        num_embeddings=ckpt_args["num_embeddings"],
-        sequence_length=ckpt_args["window_size"],
-        num_residual_blocks=ckpt_args["num_residual_blocks"],
-        commitment_cost=ckpt_args["commitment_cost"],
-    )
+
+    # Detect model type
+    quantizer_method = ckpt_args.get("quantizer_method", None)
+
+    if quantizer_method is None:
+        # Standard VQVAE
+        LOG.info("Detected standard VQVAE model")
+        model = VQVAE(
+            input_dim=ckpt_args["input_dim"],
+            hidden_dims=ckpt_args["hidden_dims"],
+            embedding_dim=ckpt_args["embedding_dim"],
+            num_embeddings=ckpt_args["num_embeddings"],
+            sequence_length=ckpt_args["window_size"],
+            num_residual_blocks=ckpt_args["num_residual_blocks"],
+            commitment_cost=ckpt_args["commitment_cost"],
+        )
+    else:
+        # UnifiedVQVAE
+        LOG.info(f"Detected UnifiedVQVAE model (quantizer_method={quantizer_method})")
+
+        if quantizer_method == "rvq":
+            LOG.warning(
+                "This is an RVQ model. For hierarchical visualizations, "
+                "consider using visualize_rvq_codebook.py instead."
+            )
+
+        model = UnifiedVQVAE(
+            input_dim=ckpt_args["input_dim"],
+            hidden_dims=ckpt_args["hidden_dims"],
+            embedding_dim=ckpt_args["embedding_dim"],
+            num_embeddings=ckpt_args["num_embeddings"],
+            sequence_length=ckpt_args["window_size"],
+            num_residual_blocks=ckpt_args["num_residual_blocks"],
+            commitment_cost=ckpt_args["commitment_cost"],
+            quantizer_method=quantizer_method,
+            quantizer_kwargs=ckpt_args.get("quantizer_kwargs", {}),
+        )
+
     model.load_state_dict(checkpoint["model_state_dict"])
     model.to(device)
     model.eval()
     LOG.info(
-        "Loaded VQ-VAE (window_size=%d, num_embeddings=%d)",
+        "Loaded model (window_size=%d, num_embeddings=%d)",
         ckpt_args["window_size"],
         ckpt_args["num_embeddings"],
     )
@@ -287,13 +327,27 @@ def visualize_codebook(
 
         # CRITICAL: Repeat each code across latent_len timesteps
         # Example: code 42 → [42, 42, 42, 42, 42]
-        # Shape: (batch_size, latent_len)
+        # For standard VQ: Shape (batch_size, latent_len)
+        # For RVQ: Shape (batch_size, latent_len, num_quantizers)
         latent_codes = batch_indices[:, None].repeat(1, latent_len)
         # batch_indices[:, None]: (batch,) → (batch, 1)
         # .repeat(1, latent_len): (batch, 1) → (batch, latent_len)
 
+        # For RVQ models, we need to handle the hierarchical structure
+        # RVQ codes have shape (batch, time, num_quantizers)
+        # For visualization, we'll use the code only in the FIRST quantizer
+        # and set others to 0 (this shows the first quantizer's contribution)
+        if hasattr(model, 'quantizer_method') and model.quantizer_method == 'rvq':
+            num_quantizers = model.quantizer.quantizer.num_quantizers
+            # Expand to (batch, latent_len, num_quantizers)
+            rvq_codes = torch.zeros(latent_codes.shape[0], latent_codes.shape[1], num_quantizers,
+                                   dtype=torch.long, device=device)
+            rvq_codes[:, :, 0] = latent_codes  # Put code in first quantizer
+            latent_codes = rvq_codes
+            LOG.info(f"RVQ mode: Visualizing codes in first quantizer only (others=0)")
+
         # Decode all codes in this chunk
-        # Input: (batch, latent_len) discrete indices
+        # Input: (batch, latent_len) or (batch, latent_len, num_quantizers) for RVQ
         # Output: (batch, 48, 150) continuous keypoint trajectories
         decoded = decode_embeddings(model, latent_codes, device=device)
 
