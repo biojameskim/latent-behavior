@@ -58,21 +58,72 @@ def resolve_device(requested: str) -> torch.device:
 
 
 def load_model(checkpoint_path: Path, device: torch.device):
-    """Load UnifiedVQVAE model from checkpoint."""
+    """
+    Load UnifiedVQVAE model from checkpoint.
+
+    Auto-detects RVQ from:
+    1. quantizer_method field (if present)
+    2. Model state dict structure (checks for ResidualVQ keys)
+    3. Manual override via --force-rvq flag (handled by caller)
+    """
     checkpoint = torch.load(checkpoint_path, map_location=device)
 
     if "args" not in checkpoint:
         raise KeyError("Checkpoint missing 'args'.")
 
     args = checkpoint["args"]
+    quantizer_method = args.get("quantizer_method", None)
 
-    # Check that this is an RVQ model
-    if args.get("quantizer_method") != "rvq":
+    # Auto-detect RVQ from model structure if quantizer_method not specified
+    if quantizer_method is None:
+        LOG.info("quantizer_method not in checkpoint args, attempting auto-detection...")
+
+        # Check state dict for RVQ-specific keys
+        state_dict = checkpoint["model_state_dict"]
+        is_rvq = any("quantizer.quantizer.layers" in key for key in state_dict.keys())
+
+        if is_rvq:
+            LOG.info("✓ Auto-detected RVQ model from state dict structure")
+            quantizer_method = "rvq"
+
+            # Try to infer num_quantizers from state dict
+            quantizer_keys = [k for k in state_dict.keys() if "quantizer.quantizer.layers" in k]
+            if quantizer_keys:
+                # Extract layer indices to count quantizers
+                layer_indices = set()
+                for key in quantizer_keys:
+                    # Example key: "quantizer.quantizer.layers.0._codebook.embed.weight"
+                    parts = key.split(".")
+                    if "layers" in parts:
+                        layer_idx = int(parts[parts.index("layers") + 1])
+                        layer_indices.add(layer_idx)
+                num_quantizers = len(layer_indices)
+                LOG.info(f"✓ Detected {num_quantizers} quantizers from state dict")
+            else:
+                num_quantizers = 4  # Default fallback
+                LOG.warning(f"Could not determine num_quantizers, using default: {num_quantizers}")
+
+            # Add to args for model reconstruction
+            if "quantizer_kwargs" not in args:
+                args["quantizer_kwargs"] = {}
+            args["quantizer_kwargs"]["num_quantizers"] = num_quantizers
+        else:
+            raise ValueError(
+                f"This script is for RVQ models. "
+                f"Checkpoint does not appear to be RVQ (no 'quantizer.quantizer.layers' in state dict). "
+                f"Use visualize_codebook_embeddings.py for standard VQ."
+            )
+
+    # Verify it's RVQ
+    if quantizer_method != "rvq":
         raise ValueError(
             f"This script is for RVQ models. "
-            f"Found quantizer_method={args.get('quantizer_method')}. "
+            f"Found quantizer_method={quantizer_method}. "
             f"Use visualize_codebook_embeddings.py for standard VQ."
         )
+
+    # Get num_quantizers
+    num_quantizers = args.get("quantizer_kwargs", {}).get("num_quantizers", 4)
 
     # Reconstruct model
     model = UnifiedVQVAE(
@@ -83,15 +134,13 @@ def load_model(checkpoint_path: Path, device: torch.device):
         sequence_length=args["window_size"],
         num_residual_blocks=args["num_residual_blocks"],
         commitment_cost=args["commitment_cost"],
-        quantizer_method=args["quantizer_method"],
-        quantizer_kwargs=args.get("quantizer_kwargs", {}),
+        quantizer_method="rvq",
+        quantizer_kwargs=args.get("quantizer_kwargs", {"num_quantizers": num_quantizers}),
     )
 
     model.load_state_dict(checkpoint["model_state_dict"])
     model.to(device)
     model.eval()
-
-    num_quantizers = args["quantizer_kwargs"].get("num_quantizers", 4)
 
     LOG.info(f"Loaded RVQ model:")
     LOG.info(f"  - Codebook size: {args['num_embeddings']}")
