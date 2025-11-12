@@ -6,12 +6,16 @@ visualizing them alongside the original poses.
 from collections import defaultdict
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
+import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
-from .plot_mabe_flies import get_Dark3_cmap, plot_arena, plot_fly
+# Add parent directory to path for package imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+from flies.visualization.plot_mabe_flies import get_Dark3_cmap, plot_arena, plot_fly
 
 
 FlyKey = Tuple[str, int]

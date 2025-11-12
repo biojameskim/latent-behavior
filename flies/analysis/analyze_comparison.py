@@ -236,7 +236,7 @@ def plot_final_comparison_bars(all_results: Dict, save_path: Path):
         bars = ax.bar(
             [m.upper() for i, m in enumerate(methods) if valid_mask[i]],
             [v for v in values if not np.isnan(v)],
-            color=[colors_list[i] for i in range(len(methods)) if valid_mask[i]],
+            color=[colors_list[i % len(colors_list)] for i in range(len(methods)) if valid_mask[i]],
             alpha=0.8,
             edgecolor='black',
             linewidth=1.5
@@ -486,8 +486,11 @@ def main(args):
     print(f"\nFound {len(all_results)} methods: {', '.join(all_results.keys())}")
 
     # Create output directory for plots
-    plots_dir = results_dir / 'analysis_plots'
-    plots_dir.mkdir(exist_ok=True)
+    if args.output_dir:
+        plots_dir = Path(args.output_dir)
+    else:
+        plots_dir = results_dir / 'analysis_plots'
+    plots_dir.mkdir(parents=True, exist_ok=True)
     print(f"\nSaving plots to: {plots_dir}")
 
     # Generate plots
@@ -540,6 +543,13 @@ if __name__ == '__main__':
         nargs='+',
         default=None,
         help='Specific methods to analyze (default: auto-detect all)'
+    )
+
+    parser.add_argument(
+        '--output_dir',
+        type=str,
+        default=None,
+        help='Directory to save analysis plots (default: <results_dir>/analysis_plots)'
     )
 
     args = parser.parse_args()
