@@ -115,6 +115,7 @@ python tutorial_codebook_viz.py \
 |------|----------|
 | `CODEBOOK_VISUALIZATION_GUIDE.md` | **📖 Comprehensive guide for standard VQ** - read this first! |
 | `RVQ_VISUALIZATION_GUIDE.md` | **📖 Guide for RVQ (Residual VQ)** - hierarchical quantization |
+| `RECONSTRUCTION_PARAMETERS.md` | **📖 Reconstruction parameter reference** - window_overlays, sequence_frames, etc. |
 | `UNDERSTANDING_REPEATED_CODES.md` | Why repeated codes show motion, not static poses |
 | `VISUALIZATION.md` | General visualization documentation |
 | `README.md` | This file |
