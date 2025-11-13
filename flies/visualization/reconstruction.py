@@ -189,10 +189,13 @@ def plot_window_overlay(
             kptcolors="tab:orange",
             kpt_alpha=0.7,
             skel_alpha=0.7,
-            kpt_marker="x",
+            kpt_marker="o",
         )
         ax.set_title(f"Frame {frame}")
         ax.set_aspect("equal")
+        # Fixed axis limits for consistent visualization across all plots
+        ax.set_xlim([-20, 20])
+        ax.set_ylim([-20, 20])
 
     plt.tight_layout()
     if save_path is not None:
@@ -253,6 +256,9 @@ def plot_sequence_overlay(
     ax.set_aspect("equal")
     ax.set_xlabel("x")
     ax.set_ylabel("y")
+    # Fixed axis limits for consistent visualization across all plots
+    ax.set_xlim([-20, 20])
+    ax.set_ylim([-20, 20])
 
     if save_path is not None:
         save_path = Path(save_path)
