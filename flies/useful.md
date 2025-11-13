@@ -35,7 +35,6 @@ python train_comparison.py \
 ```
 - **Purpose:** General comparison script for all 5 quantization methods
 - **`--methods` available:** `vq`, `vq_improved`, `fsq`, `rvq`, `lfq`
-- **Use case:** Initial exploration to find which methods work best
 - **Default hyperparameters:** More general (e.g., embedding_dim=256, lr=1e-4, batch_size=128, epochs=100)
 
 ### Fine-tuning between the RVQ/FSQ models 
@@ -56,7 +55,6 @@ python train_rvq_fsq_comparison.py \
 ```
 - **Purpose:** Focused comparison of RVQ and FSQ variations only
 - **`--methods` available:** `rvq_base`, `rvq_deep`, `rvq_large`, `rvq_xlarge`, `rvq_shared`, `rvq_shallow_large`, `fsq_base`, `fsq_small`, `fsq_large`, `fsq_balanced`, `fsq_minimal`, `fsq_xlarge`
-- **Use case:** Deep dive into RVQ/FSQ after they showed promising results
 - **Default hyperparameters:** Different defaults (e.g., embedding_dim=128, lr=1e-3, batch_size=32, epochs=20)
 
 ## 2. Generating figures for model training results
