@@ -194,8 +194,8 @@ def plot_window_overlay(
         ax.set_title(f"Frame {frame}")
         ax.set_aspect("equal")
         # Fixed axis limits for consistent visualization across all plots
-        ax.set_xlim([-20, 20])
-        ax.set_ylim([-20, 20])
+        ax.set_xlim([-2.5, 2.5])
+        ax.set_ylim([-2.5, 2.5])
 
     plt.tight_layout()
     if save_path is not None:
@@ -257,8 +257,8 @@ def plot_sequence_overlay(
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     # Fixed axis limits for consistent visualization across all plots
-    ax.set_xlim([-20, 20])
-    ax.set_ylim([-20, 20])
+    ax.set_xlim([-30, 30])
+    ax.set_ylim([-30, 30])
 
     if save_path is not None:
         save_path = Path(save_path)
