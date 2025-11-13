@@ -38,7 +38,7 @@ from flies.visualization.reconstruction import (
     stitch_fly_windows,
 )
 from flies.vq_vae.vqvae import VQVAE
-
+from flies.vq_vae.vqvae_unified import UnifiedVQVAE
 
 LOG = logging.getLogger(__name__)
 
@@ -147,15 +147,50 @@ def build_model(checkpoint_path: Path, device: torch.device) -> Tuple[VQVAE, Dic
     if "args" not in checkpoint:
         raise KeyError(f"Checkpoint {checkpoint_path} does not contain training arguments under key 'args'.")
     ckpt_args = checkpoint["args"]
-    model = VQVAE(
-        input_dim=ckpt_args["input_dim"],
-        hidden_dims=ckpt_args["hidden_dims"],
-        embedding_dim=ckpt_args["embedding_dim"],
-        num_embeddings=ckpt_args["num_embeddings"],
-        sequence_length=ckpt_args["window_size"],
-        num_residual_blocks=ckpt_args["num_residual_blocks"],
-        commitment_cost=ckpt_args["commitment_cost"],
-    )
+
+    # Detect if this is a UnifiedVQVAE (RVQ/FSQ) or old VQVAE
+    # Check multiple places for the quantizer type
+    quantizer_type = ckpt_args.get("quantizer_type")
+    if quantizer_type is None and "config" in checkpoint:
+        # Check the config dict (used by train_all_vqs.sh)
+        quantizer_type = checkpoint["config"].get("method", "vq")
+    if quantizer_type is None:
+        quantizer_type = "vq"  # Default to legacy VQ
+
+    if quantizer_type in ("rvq", "fsq", "lfq"):
+        # Use UnifiedVQVAE for new quantizer types
+        # Get quantizer_kwargs from either args or config
+        quantizer_kwargs = ckpt_args.get("quantizer_kwargs")
+        if quantizer_kwargs is None and "config" in checkpoint:
+            quantizer_kwargs = checkpoint["config"].get("kwargs", {})
+        if quantizer_kwargs is None:
+            quantizer_kwargs = {}
+
+        model = UnifiedVQVAE(
+            input_dim=ckpt_args["input_dim"],
+            hidden_dims=ckpt_args["hidden_dims"],
+            embedding_dim=ckpt_args["embedding_dim"],
+            num_embeddings=ckpt_args["num_embeddings"],
+            sequence_length=ckpt_args["window_size"],
+            num_residual_blocks=ckpt_args["num_residual_blocks"],
+            commitment_cost=ckpt_args["commitment_cost"],
+            quantizer_method=quantizer_type,
+            quantizer_kwargs=quantizer_kwargs,
+        )
+        LOG.info("Loading UnifiedVQVAE with quantizer_type=%s, kwargs=%s", quantizer_type, quantizer_kwargs)
+    else:
+        # Use old VQVAE for backwards compatibility
+        model = VQVAE(
+            input_dim=ckpt_args["input_dim"],
+            hidden_dims=ckpt_args["hidden_dims"],
+            embedding_dim=ckpt_args["embedding_dim"],
+            num_embeddings=ckpt_args["num_embeddings"],
+            sequence_length=ckpt_args["window_size"],
+            num_residual_blocks=ckpt_args["num_residual_blocks"],
+            commitment_cost=ckpt_args["commitment_cost"],
+        )
+        LOG.info("Loading legacy VQVAE")
+
     model.load_state_dict(checkpoint["model_state_dict"])
     model.to(device)
     model.eval()
