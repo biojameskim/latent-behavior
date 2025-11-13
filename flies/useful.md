@@ -9,7 +9,27 @@ python train_comparison.py \
 --train_data ../../../../data/fly_data/fly_group_train.npy \
 --val_data ../../../../data/fly_data/fly_group_train.npy \
 --fly_split_file ../data/fly_data/fly_split.json \
---methods vq_improved
+\
+
+--methods vq vq_improved fsq rvq lfq
+
+\
+--window_size 150 \
+--stride 75 \
+\
+--embedding_dim 128 \
+--num_embeddings 32 \
+--num_residual_blocks 2 \
+--commitment_cost 0.25 \
+\
+--batch_size 128 \
+--epochs 20 \
+--lr 1e-4 \
+--weight_decay 1e-5 \
+--lr_scheduler_tmax 15 \
+\
+--output_dir ./outputs/comparison \
+--save_every 5
 ```
 - **Purpose:** General comparison script for all 5 quantization methods
 - **`--methods` available:** `vq`, `vq_improved`, `fsq`, `rvq`, `lfq`
