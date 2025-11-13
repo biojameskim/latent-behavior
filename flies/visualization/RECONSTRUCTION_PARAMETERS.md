@@ -142,37 +142,39 @@ rvq_recon_viz/sequence_overlays/
 - Can't show all frames as images
 - Pick representative snapshots
 
-**Default behavior** `[0]`:
-- Only shows frame 0 (beginning of sequence)
+**Default behavior** `[500]`:
+- Shows frame 500 (avoids frame 0 centering artifact)
+- Frame 0 typically has all flies centered at origin due to data preprocessing
 
 **Example values**:
 ```bash
---sequence_frames 0              # Default: just the first frame
---sequence_frames 0 1000 2000    # Three snapshots: start, middle, end
---sequence_frames 0 500 1000 1500 2000  # Five snapshots across sequence
+--sequence_frames 500            # Default: single snapshot at frame 500
+--sequence_frames 0              # First frame (all flies centered at origin)
+--sequence_frames 500 1500 2500  # Three snapshots: early, middle, late
+--sequence_frames 100 500 1000 1500 2000  # Five snapshots across sequence
 ```
 
 **How it works**:
 ```
 Sequence with 4500 frames: [0, 1, 2, ..., 4498, 4499]
 
---sequence_frames 0
-→ Shows frame 0 only
+--sequence_frames 500
+→ Shows frame 500 only (default)
 
---sequence_frames 0 1000 2000
-→ Shows frames 0, 1000, 2000
+--sequence_frames 500 1500 2500
+→ Shows frames 500, 1500, 2500
 → Creates 3 images per sequence
 ```
 
 **Output files per sequence**:
 ```bash
-# With --sequence_frames 0 1000 2000 and 2 sequences:
-sequence_abc123_frame_0.png
-sequence_abc123_frame_1000.png
-sequence_abc123_frame_2000.png
-sequence_def456_frame_0.png
-sequence_def456_frame_1000.png
-sequence_def456_frame_2000.png
+# With --sequence_frames 500 1500 2500 and 2 sequences:
+sequence_abc123_frame_500.png
+sequence_abc123_frame_1500.png
+sequence_abc123_frame_2500.png
+sequence_def456_frame_500.png
+sequence_def456_frame_1500.png
+sequence_def456_frame_2500.png
 ```
 
 ---
@@ -184,10 +186,10 @@ python visualize_reconstructions.py \
     --checkpoint ../training/outputs/rvq_deep/best_model.pt \
     --data_file ../../data/fly_data/fly_group_train.npy \
     --output_dir rvq_recon_viz \
-    --window_overlays 10 \        # Save 10 window comparisons
-    --window_frames 0 74 149 \    # Show 3 frames per window
-    --max_sequences 5 \           # Save 5 sequence arena views
-    --sequence_frames 0 500 1000  # Show 3 frames per sequence
+    --window_overlays 10 \          # Save 10 window comparisons
+    --window_frames 0 74 149 \      # Show 3 frames per window
+    --max_sequences 5 \             # Save 5 sequence arena views
+    --sequence_frames 500 1500 2500 # Show 3 frames per sequence (avoids frame 0)
 ```
 
 **This produces**:
@@ -201,12 +203,12 @@ rvq_recon_viz/
 │   └── window_0009.png  ← 3 frames from 10th window
 │
 └── sequence_overlays/
-    ├── seq1_frame_0.png      ← Arena view, frame 0
     ├── seq1_frame_500.png    ← Arena view, frame 500
-    ├── seq1_frame_1000.png   ← Arena view, frame 1000
-    ├── seq2_frame_0.png
+    ├── seq1_frame_1500.png   ← Arena view, frame 1500
+    ├── seq1_frame_2500.png   ← Arena view, frame 2500
     ├── seq2_frame_500.png
-    ├── seq2_frame_1000.png
+    ├── seq2_frame_1500.png
+    ├── seq2_frame_2500.png
     └── ... (3 images × 5 sequences = 15 images)
 ```
 
@@ -252,7 +254,7 @@ rvq_recon_viz/
 | `--window_overlays` | # of window images to save | 5 | 5, 10, 20, 50 |
 | `--window_frames` | Frames to show per window | [0, -1] | [0, -1], [0, 74, 149], [0, 50, 100, 149] |
 | `--max_sequences` | # of sequence arena views | 5 | 5, 10, -1 (all) |
-| `--sequence_frames` | Frames to show per sequence | [0] | [0], [0, 1000], [0, 500, 1000, 1500] |
+| `--sequence_frames` | Frames to show per sequence | [500] | [500], [500, 1500], [100, 500, 1000] |
 
 ---
 

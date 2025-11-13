@@ -37,6 +37,10 @@ from flies.visualization.reconstruction import (
     plot_window_overlay,
     stitch_fly_windows,
 )
+from flies.visualization.denormalize import (
+    denormalize_reconstructions,
+    load_normalization_params_from_original,
+)
 from flies.vq_vae.vqvae import VQVAE
 from flies.vq_vae.vqvae_unified import UnifiedVQVAE
 
@@ -98,8 +102,8 @@ def parse_args() -> argparse.Namespace:
         "--sequence_frames",
         type=int,
         nargs="+",
-        default=[0],
-        help="Arena frames to visualize for each held-out sequence.",
+        default=[500],
+        help="Arena frames to visualize for each held-out sequence (default: 500 to avoid frame 0 centering artifact).",
     )
     parser.add_argument(
         "--max_sequences",
@@ -111,6 +115,11 @@ def parse_args() -> argparse.Namespace:
         "--save_pt",
         default=None,
         help="Optional path to write stitched trajectories/metadata using torch.save.",
+    )
+    parser.add_argument(
+        "--denormalize",
+        action="store_true",
+        help="Denormalize reconstructions back to original arena coordinates (shows true spatial layout).",
     )
     return parser.parse_args()
 
@@ -344,6 +353,16 @@ def main() -> None:
 
     stitched_orig = stitch_fly_windows(grouped_orig, args.num_frames, window_size, stride)
     stitched_recon = stitch_fly_windows(grouped_recon, args.num_frames, window_size, stride)
+
+    # Denormalize to original arena coordinates if requested
+    if args.denormalize:
+        LOG.info("Denormalizing reconstructions to original arena coordinates...")
+        norm_params = load_normalization_params_from_original(args.data_file)
+        stitched_orig = denormalize_reconstructions(stitched_orig, norm_params)
+        stitched_recon = denormalize_reconstructions(stitched_recon, norm_params)
+        LOG.info("Denormalization complete - visualizations will show true spatial layout")
+    else:
+        LOG.info("Using normalized (ego-centric) coordinates - spatial relationships NOT preserved")
 
     arenas_orig = assemble_sequences(stitched_orig)
     arenas_recon = assemble_sequences(stitched_recon)
