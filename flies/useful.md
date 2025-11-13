@@ -77,7 +77,7 @@ python visualize_reconstructions.py \
 ```
 - The `--denormalize` flag here is important. When creating the vq codebook, I want all the flies to start at (0,0) facing up so that they're normalized. But when reconstructing the visualizations, the multi-fly arena layout is meaningless because the spatial relationships between the flies is meaningless. So it's good to denormalize this for visualization. You can remove this flag, and you'll just get an egocentric view. Could be useful but don't try to interpret the spatial relationships between flies then.
 
-We support **two types of visualizations**, each controlled by different parameters:
+There's **two types of visualizations**, each controlled by different parameters:
 
 ---
 
@@ -126,3 +126,49 @@ Large-scale overview of the **entire 4500-frame trajectory**, showing **all flie
 
 ---
 
+### Codebook Visualizations
+**For Vanilla/Improved VQ-VAE:** 
+(This decodes individual codes from the single codebook).
+
+	```
+	python visualize_codebook_embeddings.py \
+	    --checkpoint ../training/outputs/vanilla_run/best_model.pt \
+	    --output_dir codebook_viz
+	```
+
+**For RVQ (Residual Vector Quantization):**
+
+	```
+	python visualize_rvq_codebook.py \
+	    --checkpoint ../training/outputs/rvq_run/best_model.pt \
+	    --output_dir rvq_viz \
+	    --mode all \
+	    --num_samples 10
+	```
+- **individual** - Each quantizer in isolation (diagonal matrix pattern)
+	```
+	Q0: [code, 0, 0, 0]
+	Q1: [0, code, 0, 0]
+	Q2: [0, 0, code, 0]
+	Q3: [0, 0, 0, code]
+	```
+- **combinations** - Random full code combinations
+	- `[a, b, c, d]` with random codes at each position.
+	- Shows what diverse behaviors the full codebook can produce
+
+- **cumulative** - Progressive refinement showing all quantizations building up:
+	```
+	Q0: [code, 0, 0, 0] (coarse)
+	Q0+Q1: [code, code, 0, 0] (add detail)
+	Q0+Q1+Q2: [code, code, code, 0] (more detail)
+	Full: [code, code, code, code] ← All quantizers applied!
+	```
+
+- **ablations** - Removing quantizers (backward)
+	```
+	Full: [a, b, c, d]
+	-Q3: [a, b, c, 0]
+	-Q2&Q3: [a, b, 0, 0]
+	Q0 only: [a, 0, 0, 0]
+	```
+- **all** - Runs all four modes above
