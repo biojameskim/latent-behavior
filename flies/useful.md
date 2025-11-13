@@ -68,12 +68,15 @@ python analyze_comparison.py \
 python visualize_reconstructions.py \
 	--checkpoint ../training/outputs/rvq_fsq_comparison/rvq_deep/best_model.pt \
 	--data_file ../../../../data/fly_data/fly_group_train.npy \
-	--output_dir rvq_recon_viz \
+	--output_dir rvq_recon_viz_denorm \
 	--window_overlays 10 \
 	--window_frames 0 74 149 \
 	--max_sequences 5 \
-	--sequence_frames 0 500 1000
+	--sequence_frames 0 500 1000 \
+	--denormalize
 ```
+- The `--denormalize` flag here is important. When creating the vq codebook, I want all the flies to start at (0,0) facing up so that they're normalized. But when reconstructing the visualizations, the multi-fly arena layout is meaningless because the spatial relationships between the flies is meaningless. So it's good to denormalize this for visualization. You can remove this flag, and you'll just get an egocentric view. Could be useful but don't try to interpret the spatial relationships between flies then.
+
 We support **two types of visualizations**, each controlled by different parameters:
 
 ---
