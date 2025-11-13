@@ -65,10 +65,17 @@ python visualize_reconstructions.py \
     --output_dir recon_viz \
     --window_overlays 20 \           # Number of windows to visualize (default: 5)
     --max_sequences 10 \             # Number of sequences to visualize (default: 5)
-    --sequence_frames 0 100 200 \    # Which frames to show (default: [0])
+    --sequence_frames 500 1500 2500 \  # Which frames to show (default: [500])
     --window_frames 0 74 149 \       # Frames within windows (default: [0, -1])
-    --num_frames 4500                # Max frames per trajectory (default: 4500)
+    --num_frames 4500 \              # Max frames per trajectory (default: 4500)
+    --denormalize                    # Show true arena layout (optional)
 ```
+
+**Important: `--denormalize` flag**
+- **By default**: Visualizations use ego-centric (normalized) coordinates where each fly is centered at (0,0)
+- This means **spatial relationships between flies are NOT preserved** in default mode
+- **Use `--denormalize`** to transform reconstructions back to original arena coordinates
+- **With `--denormalize`**: Sequence overlays show **true multi-fly arena layout** with preserved social interactions
 
 **Output structure**:
 - `recon_viz/window_overlays/window_0000.png` through `window_NNNN.png`
