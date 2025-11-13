@@ -55,7 +55,7 @@ python visualize_reconstructions.py \
 - 5 individual window overlays (original vs reconstructed)
 - 5 sequence arena overlays (all flies in the arena)
 - Shows frames 0 and last frame for windows
-- Shows frame 0 for sequences
+- Shows frame 500 for sequences (avoids frame 0 centering artifact)
 
 **Parameters to control what's visualized**:
 ```bash

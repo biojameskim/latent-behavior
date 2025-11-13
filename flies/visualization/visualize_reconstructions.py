@@ -98,8 +98,8 @@ def parse_args() -> argparse.Namespace:
         "--sequence_frames",
         type=int,
         nargs="+",
-        default=[0],
-        help="Arena frames to visualize for each held-out sequence.",
+        default=[500],
+        help="Arena frames to visualize for each held-out sequence (default: 500 to avoid frame 0 centering artifact).",
     )
     parser.add_argument(
         "--max_sequences",
