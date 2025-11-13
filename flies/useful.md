@@ -3,6 +3,8 @@
 Some useful commands I've been using:
 
 ## 1. Training the vanilla VQ-VAE model + some variations
+I used `train_comparison.py` first to identify which method family works best, then used `train_rvq_fsq_comparison.py` to optimize RVQ/FSQ configurations since they were the best.
+
 ### General model training
 ```
 python train_comparison.py \
