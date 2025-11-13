@@ -272,7 +272,7 @@ def save_window_plots(
         seq = meta.get("sequence_id", "unknown")
         fly = meta.get("fly_idx", "NA")
         window = meta.get("window_idx", "NA")
-        fig.suptitle(f"Seq {seq} • Fly {fly} • Window {window}", fontsize=10)
+        fig.suptitle(f"Seq {seq} • Fly {fly} • Window {window}", fontsize=10, y=1.02)
         fig.savefig(save_path, dpi=200, bbox_inches="tight")
         plt.close(fig)
 
