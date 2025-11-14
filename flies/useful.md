@@ -125,6 +125,68 @@ Large-scale overview of the **entire 4500-frame trajectory**, showing **all flie
 **5 sequences × 3 frames each = 15 arena-wide trajectory images**
 
 ---
+### Video Generation
+- You can also create videos with the visualizations generated.
+- `create_overlay_video.py` – Generate videos showing VQ-VAE reconstruction overlays over time. Combines the reconstruction overlay functionality with video creation to visualize how reconstruction quality evolves throughout a sequence.
+  ```bash
+  # Create sequence overlay video (full arena view)
+  python create_overlay_video.py \
+    --data_file ../../../../data/fly_data/fly_group_train.npy \
+    --checkpoint ../training/outputs/rvq_fsq_comparison/rvq_deep/best_model.pt \
+  	--output_dir ./overlay_videos
+    --overlay_type sequence \
+    --sequence_id 01FJRKCP4GE1W1DFX51C \
+    --start_frame 0 \
+    --end_frame 1000 \
+    --frame_step 15 \
+    --fps 10 \
+    --denormalize
+
+  # Create window overlay video (individual fly)
+  python create_overlay_video.py \
+	--data_file ../../../../data/fly_data/fly_group_train.npy \
+	--checkpoint ../training/outputs/rvq_fsq_comparison/rvq_deep/best_model.pt \
+	--output_dir ./overlay_videos
+	--overlay_type window \
+	--sequence_id 01FJRKCP4GE1W1DFX51C \
+	--fly_idx 0 \
+	--start_frame 0 \
+	--end_frame 1000 \
+	--frame_step 15 \
+	--fps 10
+  ```
+  **What it does under the hood**
+  1. Loads VQ-VAE checkpoint and runs inference on validation data.
+  2. Generates overlay frames at regular intervals (e.g., every 15 frames via `--frame_step`).
+  3. Creates video using FFmpeg with configurable framerate (`--fps`).
+  4. Supports both sequence overlays (full arena with all flies) and window overlays (individual fly windows).
+
+  **Useful flags**
+  - `--overlay_type {sequence,window}` → Choose between full arena view or individual fly window.
+  - `--frame_step 15` → Generate overlay every N frames (default: 15).
+  - `--fps 10` → Video framerate (default: 10).
+  - `--denormalize` → For sequence overlays, show true spatial coordinates instead of ego-centric.
+  - `--keep_frames` → By default, the individual frame PNG files are automatically deleted after the video is created. Use this flag if you want to keep them.
+  - `--dpi 150` → Resolution for frame images (default: 150).
+
+  **Output**
+  - Video file named `<sequence_id>_sequence_overlay.mp4` or `<sequence_id>_fly<N>_window_overlay.mp4` in the output directory.
+ 
+  **Sample Sequences**
+  - Here's 10 sequence ids to try out:
+		```
+		01FJRKCP4GE1W1DFX51C
+		0ARFX7NW5OPBHY1YD7BO
+		0DGRG61QOBG0YIPOQ8OW
+		0E9JINHV8YPSXX940XZQ
+		0JJ7UPKK5NRBFKBV4RBW
+		0K9A0NEHPW5E793L8SSS
+		0LS4847OD3QIDR0DAEHN
+		0POUSR2V31YYWWMU1AXO
+		0TSEI0MP7TWUIZ3LEJH1
+		0V0ZDPL65RH0YLNL80VZ
+		```
+---
 
 ### Codebook Visualizations
 **For Vanilla/Improved VQ-VAE:** 
