@@ -67,8 +67,50 @@ headless Matplotlib backend so they can run on servers without displays.
   │   └── …
   └── stitched.pt  # only if --save_pt was provided
   ```
-  Originals are drawn with opaque skeletons; reconstructions reuse the same color but lighter, with “x” markers to highlight discrepancies.
-- `visualize_codebook_embeddings.py` – Decodes every codebook entry (and optional user-supplied code sequences) through the trained decoder to catalogue the learned behavior “syllables.”
+  Originals are drawn with opaque skeletons; reconstructions reuse the same color but lighter, with "x" markers to highlight discrepancies.
+- `create_overlay_video.py` – Generate videos showing VQ-VAE reconstruction overlays over time. Combines the reconstruction overlay functionality with video creation to visualize how reconstruction quality evolves throughout a sequence.
+  ```bash
+  # Create sequence overlay video (full arena view)
+  python create_overlay_video.py \
+      --data_file ../../../data/fly_data/fly_group_train.npy \
+      --checkpoint ../training/outputs/<run>/best_model.pt \
+      --overlay_type sequence \
+      --sequence_id <sequence_id> \
+      --start_frame 0 \
+      --end_frame 1000 \
+      --frame_step 15 \
+      --fps 10 \
+      --output_dir overlay_videos
+
+  # Create window overlay video (individual fly)
+  python create_overlay_video.py \
+      --data_file ../../../data/fly_data/fly_group_train.npy \
+      --checkpoint ../training/outputs/<run>/best_model.pt \
+      --overlay_type window \
+      --sequence_id <sequence_id> \
+      --fly_idx 0 \
+      --start_frame 0 \
+      --end_frame 1000 \
+      --frame_step 15 \
+      --fps 10
+  ```
+  **What it does**
+  1. Loads VQ-VAE checkpoint and runs inference on validation data.
+  2. Generates overlay frames at regular intervals (e.g., every 15 frames via `--frame_step`).
+  3. Creates video using FFmpeg with configurable framerate (`--fps`).
+  4. Supports both sequence overlays (full arena with all flies) and window overlays (individual fly windows).
+
+  **Key options**
+  - `--overlay_type {sequence,window}` → Choose between full arena view or individual fly window.
+  - `--frame_step 15` → Generate overlay every N frames (default: 15).
+  - `--fps 10` → Video framerate (default: 10).
+  - `--denormalize` → For sequence overlays, show true spatial coordinates instead of ego-centric.
+  - `--keep_frames` → Don't delete frame images after video creation.
+  - `--dpi 150` → Resolution for frame images (default: 150).
+
+  **Output**
+  Video file named `<sequence_id>_sequence_overlay.mp4` or `<sequence_id>_fly<N>_window_overlay.mp4` in the output directory.
+- `visualize_codebook_embeddings.py` – Decodes every codebook entry (and optional user-supplied code sequences) through the trained decoder to catalogue the learned behavior "syllables."
   ```bash
   python visualize_codebook_embeddings.py \
       --checkpoint ../training/outputs/<run>/best_model.pt \
