@@ -133,7 +133,7 @@ Large-scale overview of the **entire 4500-frame trajectory**, showing **all flie
   python create_overlay_video.py \
     --data_file ../../../../data/fly_data/fly_group_train.npy \
     --checkpoint ../training/outputs/rvq_fsq_comparison/rvq_deep/best_model.pt \
-  	--output_dir ./overlay_videos
+  	--output_dir ./overlay_videos \
     --overlay_type sequence \
     --sequence_id 01FJRKCP4GE1W1DFX51C \
     --start_frame 0 \
@@ -146,7 +146,7 @@ Large-scale overview of the **entire 4500-frame trajectory**, showing **all flie
   python create_overlay_video.py \
 	--data_file ../../../../data/fly_data/fly_group_train.npy \
 	--checkpoint ../training/outputs/rvq_fsq_comparison/rvq_deep/best_model.pt \
-	--output_dir ./overlay_videos
+	--output_dir ./overlay_videos \
 	--overlay_type window \
 	--sequence_id 01FJRKCP4GE1W1DFX51C \
 	--fly_idx 0 \
