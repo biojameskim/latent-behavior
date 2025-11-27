@@ -36,12 +36,29 @@
 - test keypoints sample: shape=(4500, 11, 24, 2), dtype=float32
 
 ## `fly_groups_test_labels.npy`
-- test_labels array: shape=(101, 2443500), dtype=float32
-- This is my understanding:
-    - 101 
-        - There are 50 tasks for the fly dataset..
-        - There are some hidden tests so it could be 50 known tasks.
-    - 2443500 = 4500 (frames) x 543 (test sequences).
+This is a **dictionary** with 5 keys:
+
+1. **`frame_number_map`** (dict with 543 entries)
+   - Maps each sequence ID to a tuple of (start_frame, end_frame) indices
+   - Each sequence has 4500 frames: (0, 4500), (4500, 9000), (9000, 13500), etc.
+   - Used to index into the flattened label_array
+
+2. **`label_array`** (numpy array, shape=(101, 2443500), dtype=float32)
+   - 101 rows: one per task/class label (matches vocabulary length)
+   - 2,443,500 columns: 4500 frames × 543 test sequences (all frames flattened)
+   - Contains binary labels: 0 (negative), 1 (positive), or NaN (unlabeled/not applicable)
+   - Most entries are NaN since each task only applies to a subset of sequences
+
+3. **`vocabulary`** (list of 101 items)
+   - Task/class names: ['control', 'BDP_sexseparated', 'Control_RGB', '71G01', 'male71G01_femaleBDP', ...]
+   - Corresponds to the 101 rows in label_array
+
+4. **`task_type`** (list of 120 items)
+   - Indicates task type for each task (all appear to be 'Discrete' for binary classification)
+   - Note: 120 items while vocabulary has 101 (some tasks may be hidden/additional)
+
+5. **`keypoint_vocabulary`** (list of 24 tuples)
+   - Same as in training data - defines the 24 tracked keypoints
 
 ## Additional Info
 `"keypoints" shape = (4500, 11, 24, 2)`
