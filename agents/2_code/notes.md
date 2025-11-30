@@ -1,0 +1,3 @@
+- hsmm_vae is CODEX
+- hslds is CLAUDE
+- gnn_vq_vae is GEMINI
